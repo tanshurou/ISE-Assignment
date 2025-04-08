@@ -24,7 +24,7 @@ Will discuss as we go
 
 ### `stage1/`
 
-for shurour and wallace
+for shurou and wallace
 
 ### `stage2/`
 
