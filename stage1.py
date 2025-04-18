@@ -165,7 +165,10 @@ class distanceTracker():
       self.signboard_active = False
       self.milestone_tracker += 100
 
-
+class Fence():
+  def __init__(self):
+    self.x = 1300
+    
     
 
 
