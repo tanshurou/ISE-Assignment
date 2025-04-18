@@ -5,6 +5,7 @@ import pygame.locals
 from utilities import resizeObject
 
 import random
+from utilities import getImage
  
 
 pygame.init()
@@ -192,6 +193,7 @@ class Scenes():
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.fence = ObstacleManager(self.scroll_speed)
+    self.enemy_mushroom = EnemyMushroomManager()
 
 
   def emptyBg(self, speed):
@@ -211,7 +213,8 @@ class Scenes():
     screen.blit(chara_frame, (55, 45))
     self.health.draw()
     self.stamina.draw()
-    self.fence.update(self.scroll_speed)
+    self.fence.update(self.scroll_speed)  #spawn fences
+    self.enemy_mushroom.spawn()           #spawn mushrooms
     self.distance.updateDistance(speed)   #track distance
     self.inventory.draw(308, 575)
   
@@ -246,12 +249,75 @@ class Fence(pygame.sprite.Sprite):
   def check_collision(self, fin_rect):
         return self.rect.colliderect(fin_rect)
   
+class EnemyMushroom(pygame.sprite.Sprite):
+  def __init__(self, y):
+    super().__init__()
+    self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
+    self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
+    self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
+    spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
+                     pygame.image.load(self.attack_spritesheet).convert_alpha(), 
+                     pygame.image.load(self.die_spritesheet).convert_alpha()]
+    self.animation_frames = [7,9,4]
+    self.animation_list = []
+    self.animation_index = [0,0,0]
+    self.rect = []
+    self.last_update_time = 0
+    self.x = 1300
+    self.y = y
+
+    for animation in range(len(spritesheets)):
+      placeholder = []
+      for frame in range(self.animation_frames[animation]):
+        img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
+        placeholder.append(img)
+        #screen.blit(img, (200,200))
+      self.animation_list.append(placeholder)
+
+
+
+  def animation(self, speed, action):
+      self.x -= speed
+      cooldown = 100  # Reduced cooldown for faster animation
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_update_time > cooldown:
+          self.animation_index[action] += 1
+          self.last_update_time = current_time
+          if self.animation_index[action] >= self.animation_frames[action]:
+              self.animation_index[action] = 0
+      
+      screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
+
+  
+    
+class EnemyMushroomManager:
+  def __init__(self):
+    self.enemy_group = pygame.sprite.Group()
+    self.last_spawned_time = 0
+    self.spawn_interval = 3000
+    self.y_positions = [215,315,415]
+
+  def spawn_mushroom(self, fence_group):
+      max_attempts = 10
+      for _ in range(max_attempts):
+          y = random.randint([215,315,415])
+          new_mushroom = EnemyMushroom(y)
+          new_mushroom.rect.topleft = (new_mushroom.x, y)
+
+          # Check for collisions with fences and other mushrooms
+          if (pygame.sprite.spritecollideany(new_mushroom, fence_group) is None and
+              pygame.sprite.spritecollideany(new_mushroom, self.enemy_group) is None):
+              self.enemy_group.add(new_mushroom)
+              return  # Successfully spawned
+      # If unable to find a valid position after max_attempts
+      print("Failed to spawn mushroom without collision.")
+
+
 
 class ObstacleManager:
   def __init__(self, scroll_speed):
     self.fence_group = pygame.sprite.Group()
     self.last_fence_time = 0
-    base = 1000
     self.min_time = int(3000/scroll_speed)
     self.max_time = int(3500/scroll_speed)
     self.spawn_interval = random.randint(self.min_time, self.max_time)
@@ -280,27 +346,17 @@ class ObstacleManager:
     self.fence_group.draw(screen)
 
 scene = Scenes()
-
-class Fence():
-  def __init__(self):
-    self.x = 1300
-    
-    
-
-
-#define character status      
-health = healthBar()
-stamina = staminaBar()
-distance = distanceTracker()
+mushroom = EnemyMushroomManager()
 
 #start
 while running:
 
   clock.tick(FPS)
 
-  scene.emptyBg(7)
-  scene.scene1(7)
-  
+  mushroom.spawn()
+
+  scene.emptyBg(2)
+  scene.scene1(2)
   
   #event handler
   for event in pygame.event.get():

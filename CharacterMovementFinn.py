@@ -1,5 +1,6 @@
 import pygame
 import spritesheet
+from pathlib import Path
 
 pygame.init()
 
@@ -9,8 +10,9 @@ SCREEN_HEIGHT = 500
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('Spritesheets')
 
+sprite_sheet_path = Path("Finn_Running.png")
 # Load your spritesheet image
-sprite_sheet_image = pygame.image.load("C:\\Users\\user\\Documents\\Degree Level 2\\Degree Semester 2\\Imaging & Special Effects\\MainMenu & Character\\Finn_Running.png").convert_alpha()
+sprite_sheet_image = pygame.image.load(sprite_sheet_path).convert_alpha()
 sprite_sheet = spritesheet.SpriteSheet(sprite_sheet_image)
 
 # Colors
