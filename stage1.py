@@ -217,7 +217,7 @@ class Scenes():
     self.stamina.draw()
     self.fence.update(self.scroll_speed)  #spawn fences
     #self.mushroom_manager.spawn(self.fence.fence_group)           #spawn mushrooms
-    self.mushroom.animation(5,0)
+    self.mushroom.animation(5,1)
     self.distance.updateDistance(speed)   #track distance
     self.inventory.draw(308, 575)
   
@@ -305,14 +305,32 @@ class Mushroom(pygame.sprite.Sprite):
   
     
 class MushroomManager:
-  def __init__(self):
+  def __init__(self, fence_group):
     self.mushroom_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
     self.y_positions = [215,315,415]
+    self.max_mushroom = 2
+    self.fence_group = fence_group
 
-  def spawn(self, fence_group):
-    print("aa")
+  def spawn(self, max_mushroom):
+    max_attempts = 5
+
+    for i in range(max_attempts):
+      new_mushroom = Mushroom(random.choice(self.y_positions))
+      
+      if (pygame.sprite.spritecollideany(new_mushroom, self.fence_group)) is None and (pygame.sprite.spritecollideany(new_mushroom, self.mushroom_group)) is None:
+        self.mushroom_group.add(new_mushroom)
+
+  def update(self):
+    for mushroom in self.mushroom_group:
+      print("")
+      
+
+    if len(self.mushroom_group) < self.max_mushroom:
+      self.spawn()
+      
+    
 
 
 
@@ -344,6 +362,7 @@ class ObstacleManager:
     for fence in self.fence_group:
       fence.update(scroll_speed)
       if fence.rect.right < -10:
+        print("here")
         fence.kill()
 
     self.fence_group.draw(screen) 
