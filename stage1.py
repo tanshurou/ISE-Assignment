@@ -1,3 +1,4 @@
+import math
 import pygame
 from pathlib import Path
 
@@ -7,7 +8,6 @@ from utilities import resizeObject
 import random
 from utilities import getImage
 
-import pygame
 from characterMovementAll import CharacterAnimation
 
 pygame.init()
@@ -210,10 +210,11 @@ class Scenes():
     ice_king_path = Path("assets") / "character" / "Ice_King.png"
     special_effect_path = Path("assets") / "character" / "Special_effect.png"
 
-    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [50, 300], scale=1)
-    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [200, 300], scale=1)
-    self.ice_king = CharacterAnimation(ice_king_path, [6, 7, 5], [106, 143, 131.25], [150, 150, 150], 60, unwanted_colors, [1500, 250], scale=1)
-    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=2)
+    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [20, 350], scale=1)
+    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [170, 350], scale=0.7)
+    self.ice_king = CharacterAnimation(ice_king_path, [6, 6, 6], [114, 141, 131], [150, 150, 150], 60, unwanted_colors, [1500, 250], scale= 0.9)
+    self.ice_king_velocity = [-4, 0]
+    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=1)
 
 
   def emptyBg(self, speed):
@@ -271,30 +272,44 @@ class Scenes():
         if self.now - self.cutscene_start_time > 5000:
             self.cutscene_state = 2
             self.cutscene_start_time = self.now
-            self.ice_king.pos = [-100, -150]
+            self.ice_king.pos = [1300, 150]
 
     elif self.cutscene_state == 2:
         if self.ice_king.action != 0:
             self.ice_king.set_action(0)
-        self.ice_king.move(dx=4, dy=2)
-        if self.ice_king.pos[0] >= self.pb.pos[0] - 50:
+        if self.ice_king.pos[0] > SCREEN_WIDTH:
+            self.ice_king.pos = [1300, 150]
+        if self.ice_king.pos[0] > self.pb.pos[0] + 100:
+            self.ice_king.move(dx=self.ice_king_velocity[0], dy=self.ice_king_velocity[1])
+        else:
             self.cutscene_state = 3
             self.cutscene_start_time = self.now
 
     elif self.cutscene_state == 3:
-        if self.ice_king.action != 1:
-            self.ice_king.set_action(1)
-        if self.pb.action != 2:
-            self.pb.set_action(2)
-        if not self.special_effect_visible:
-            self.special_effect.set_action(0)
-            self.special_effect_visible = True
-            self.special_effect.pos = [self.pb.pos[0], self.pb.pos[1] - 10]
-        if self.now - self.cutscene_start_time > 1000:
-            self.pb.visible = False
-            self.special_effect_visible = False
-            self.cutscene_state = 4
-            self.cutscene_start_time = self.now
+        if self.ice_king.action != 0:
+            self.ice_king.set_action(0)
+        if self.finn.action != 0:
+            self.finn.set_action(0)
+
+        if self.now - self.cutscene_start_time < 3000:
+            hover_offset = 10 * math.sin(pygame.time.get_ticks() * 0.005)
+            self.ice_king.pos[1] = 150 + hover_offset
+        else:
+            if not self.special_effect_visible:
+                self.special_effect.set_action(0)
+                self.special_effect_visible = True
+                self.special_effect.pos = [self.pb.pos[0], self.pb.pos[1] - 10]
+            if self.pb.action != 2:
+                self.pb.set_action(2)
+
+            hover_offset = 10 * math.sin(pygame.time.get_ticks() * 0.005)
+            self.ice_king.pos[1] = 150 + hover_offset
+
+            if self.now - self.cutscene_start_time > 6000:
+                self.pb.visible = False
+                self.special_effect_visible = False
+                self.cutscene_state = 4
+                self.cutscene_start_time = self.now
 
     elif self.cutscene_state == 4:
         if self.ice_king.action != 2:
