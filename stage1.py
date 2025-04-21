@@ -193,7 +193,9 @@ class Scenes():
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.fence = ObstacleManager(self.scroll_speed)
-    self.enemy_mushroom = EnemyMushroomManager()
+    self.mushroom_manager = MushroomManager()
+
+    self.mushroom = Mushroom(215)
 
 
   def emptyBg(self, speed):
@@ -214,7 +216,8 @@ class Scenes():
     self.health.draw()
     self.stamina.draw()
     self.fence.update(self.scroll_speed)  #spawn fences
-    self.enemy_mushroom.spawn()           #spawn mushrooms
+    #self.mushroom_manager.spawn(self.fence.fence_group)           #spawn mushrooms
+    self.mushroom.animation(5,0)
     self.distance.updateDistance(speed)   #track distance
     self.inventory.draw(308, 575)
   
@@ -239,17 +242,18 @@ class Fence(pygame.sprite.Sprite):
     self.image = fence_img 
     self.fence_x = x
     self.fence_y = y
-    self.rect = fence_img.get_rect(topleft = (x,y))
+    self.rect = fence_img.get_rect(topleft = (self.fence_x,self.fence_y))
     self.hit = False
 
   def update(self, speed):
     self.fence_x -= speed
     self.rect.x = self.fence_x
+    pygame.draw.rect(screen, (255, 0, 0), self.rect, 3)  #test
 
   def check_collision(self, fin_rect):
         return self.rect.colliderect(fin_rect)
   
-class EnemyMushroom(pygame.sprite.Sprite):
+class Mushroom(pygame.sprite.Sprite):
   def __init__(self, y):
     super().__init__()
     self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
@@ -258,13 +262,15 @@ class EnemyMushroom(pygame.sprite.Sprite):
     spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
                      pygame.image.load(self.attack_spritesheet).convert_alpha(), 
                      pygame.image.load(self.die_spritesheet).convert_alpha()]
+    
+    self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
     self.animation_frames = [7,9,4]
     self.animation_list = []
     self.animation_index = [0,0,0]
-    self.rect = []
     self.last_update_time = 0
     self.x = 1300
     self.y = y
+    self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
 
     for animation in range(len(spritesheets)):
       placeholder = []
@@ -273,12 +279,14 @@ class EnemyMushroom(pygame.sprite.Sprite):
         placeholder.append(img)
         #screen.blit(img, (200,200))
       self.animation_list.append(placeholder)
+    print(f"Rect size: {self.rect.size}")
 
 
 
   def animation(self, speed, action):
       self.x -= speed
       cooldown = 100  # Reduced cooldown for faster animation
+      
       current_time = pygame.time.get_ticks()
       if current_time - self.last_update_time > cooldown:
           self.animation_index[action] += 1
@@ -286,31 +294,26 @@ class EnemyMushroom(pygame.sprite.Sprite):
           if self.animation_index[action] >= self.animation_frames[action]:
               self.animation_index[action] = 0
       
+      self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+
       screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
+      pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
+
+
+
 
   
     
-class EnemyMushroomManager:
+class MushroomManager:
   def __init__(self):
-    self.enemy_group = pygame.sprite.Group()
+    self.mushroom_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
     self.y_positions = [215,315,415]
 
-  def spawn_mushroom(self, fence_group):
-      max_attempts = 10
-      for _ in range(max_attempts):
-          y = random.randint([215,315,415])
-          new_mushroom = EnemyMushroom(y)
-          new_mushroom.rect.topleft = (new_mushroom.x, y)
+  def spawn(self, fence_group):
+    print("aa")
 
-          # Check for collisions with fences and other mushrooms
-          if (pygame.sprite.spritecollideany(new_mushroom, fence_group) is None and
-              pygame.sprite.spritecollideany(new_mushroom, self.enemy_group) is None):
-              self.enemy_group.add(new_mushroom)
-              return  # Successfully spawned
-      # If unable to find a valid position after max_attempts
-      print("Failed to spawn mushroom without collision.")
 
 
 
@@ -343,20 +346,18 @@ class ObstacleManager:
       if fence.rect.right < -10:
         fence.kill()
 
-    self.fence_group.draw(screen)
+    self.fence_group.draw(screen) 
 
 scene = Scenes()
-mushroom = EnemyMushroomManager()
 
 #start
 while running:
 
   clock.tick(FPS)
 
-  mushroom.spawn()
 
-  scene.emptyBg(2)
-  scene.scene1(2)
+  scene.emptyBg(5)
+  scene.scene1(5)
   
   #event handler
   for event in pygame.event.get():
