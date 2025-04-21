@@ -1,7 +1,7 @@
 import pygame
 import spritesheet
 
-class CharacterAnimator:
+class CharacterAnimation:
     def __init__(self, image_path, animation_steps, frame_heights, frame_widths, cooldown, unwanted_colors, pos, scale):
         sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
         self.sprite_sheet = spritesheet.SpriteSheet(sprite_sheet_image)

@@ -6,7 +6,9 @@ from utilities import resizeObject
 
 import random
 from utilities import getImage
- 
+
+import pygame
+from characterMovementAll import CharacterAnimation
 
 pygame.init()
 
@@ -194,6 +196,24 @@ class Scenes():
     self.inventory = InventoryBar()
     self.fence = ObstacleManager(self.scroll_speed)
     self.enemy_mushroom = EnemyMushroomManager()
+    
+    # Wallace
+    Blue = (0, 162, 232)
+    unwanted_colors = [Blue]
+    self.cutscene_state = 0
+    self.cutscene_start_time = pygame.time.get_ticks()
+    self.special_effect_visible = False
+    self.gameplay_started = False
+
+    finn_path = Path("assets") / "character" / "Finn_Running.png"
+    pb_path = Path("assets") / "character" / "Princess_Bubblegum.png"
+    ice_king_path = Path("assets") / "character" / "Ice_King.png"
+    special_effect_path = Path("assets") / "character" / "Special_effect.png"
+
+    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [50, 280], scale=1)
+    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [200, 280], scale=1)
+    self.ice_king = CharacterAnimation(ice_king_path, [6, 7, 5], [106, 143, 131.25], [150, 150, 150], 60, unwanted_colors, [1000, 250], scale=1)
+    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=1)
 
 
   def emptyBg(self, speed):
@@ -204,7 +224,7 @@ class Scenes():
     self.scrolled -= self.scroll_speed
 
     if abs(self.scrolled) > self.stage1_bg_img.get_width():
-      self.scrolled = 0;
+      self.scrolled = 0
   
   def scene1(self, speed):
     self.scroll_speed = speed
@@ -214,7 +234,7 @@ class Scenes():
     self.health.draw()
     self.stamina.draw()
     self.fence.update(self.scroll_speed)  #spawn fences
-    self.enemy_mushroom.spawn()           #spawn mushrooms
+    # self.enemy_mushroom.spawn()           #spawn mushrooms
     self.distance.updateDistance(speed)   #track distance
     self.inventory.draw(308, 575)
   
@@ -229,6 +249,71 @@ class Scenes():
       self.stamina.decreaseStamina(1)
     if key_pressed[pygame.K_RIGHT]:
       self.stamina.increaseStamina(1)
+
+  def cutscene1(self):
+    self.now = pygame.time.get_ticks()
+    if self.cutscene_state == 0:
+        if self.finn.action != 0:
+            self.finn.set_action(0)
+        self.finn.move(dx=1)
+
+        if self.pb.action != 0:
+            self.pb.set_action(0)
+        self.pb.move(dx=1)
+
+        if self.finn.pos[0] >= 300:
+            self.cutscene_state = 1
+            self.cutscene_start_time = self.now
+
+    elif self.cutscene_state == 1:
+        if self.pb.action != 1:
+            self.pb.set_action(1)
+        if self.now - self.cutscene_start_time > 5000:
+            self.cutscene_state = 2
+            self.cutscene_start_time = self.now
+            self.ice_king.pos = [-100, -150]
+
+    elif self.cutscene_state == 2:
+        if self.ice_king.action != 0:
+            self.ice_king.set_action(0)
+        self.ice_king.move(dx=4, dy=2)
+        if self.ice_king.pos[0] >= self.pb.pos[0] - 50:
+            self.cutscene_state = 3
+            self.cutscene_start_time = self.now
+
+    elif self.cutscene_state == 3:
+        if self.ice_king.action != 1:
+            self.ice_king.set_action(1)
+        if self.pb.action != 2:
+            self.pb.set_action(2)
+        if not self.special_effect_visible:
+            self.special_effect.set_action(0)
+            self.special_effect_visible = True
+            self.special_effect.pos = [self.pb.pos[0], self.pb.pos[1] - 10]
+        if self.now - self.cutscene_start_time > 1000:
+            self.pb.visible = False
+            self.special_effect_visible = False
+            self.cutscene_state = 4
+            self.cutscene_start_time = self.now
+
+    elif self.cutscene_state == 4:
+        if self.ice_king.action != 2:
+            self.ice_king.set_action(2)
+        self.ice_king.move(dx=5, dy=-1)
+        if self.ice_king.pos[0] > SCREEN_WIDTH:
+            self.cutscene_state = 5
+            self.cutscene_start_time = self.now
+
+    elif self.cutscene_state == 5:
+        if self.finn.action != 2:
+            self.finn.set_action(2)
+        if self.now - self.cutscene_start_time > 2000:
+            self.cutscene_state = 6
+            self.cutscene_start_time = self.now
+
+    elif self.cutscene_state == 6:
+        self.gameplay_started = True
+        self.cutscene_state = 7
 
 class Fence(pygame.sprite.Sprite):
   def __init__(self, x, y):
@@ -348,24 +433,24 @@ class ObstacleManager:
 scene = Scenes()
 mushroom = EnemyMushroomManager()
 
-#start
-while running:
+# # start
+# while running:
 
-  clock.tick(FPS)
+#   clock.tick(FPS)
 
-  mushroom.spawn()
+#   # mushroom.spawn()
 
-  scene.emptyBg(2)
-  scene.scene1(2)
+#   scene.emptyBg(2)
+#   scene.scene1(2)
   
-  #event handler
-  for event in pygame.event.get():
-    if event.type == pygame.QUIT:
-      running = False
+#   #event handler
+#   for event in pygame.event.get():
+#     if event.type == pygame.QUIT:
+#       running = False
 
 
-  pygame.display.update()
+#   pygame.display.update()
 
-pygame.quit()
+# pygame.quit()
 
 
