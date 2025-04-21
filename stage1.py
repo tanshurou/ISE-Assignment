@@ -210,10 +210,10 @@ class Scenes():
     ice_king_path = Path("assets") / "character" / "Ice_King.png"
     special_effect_path = Path("assets") / "character" / "Special_effect.png"
 
-    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [50, 280], scale=1)
-    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [200, 280], scale=1)
-    self.ice_king = CharacterAnimation(ice_king_path, [6, 7, 5], [106, 143, 131.25], [150, 150, 150], 60, unwanted_colors, [1000, 250], scale=1)
-    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=1)
+    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [50, 300], scale=1)
+    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [200, 300], scale=1)
+    self.ice_king = CharacterAnimation(ice_king_path, [6, 7, 5], [106, 143, 131.25], [150, 150, 150], 60, unwanted_colors, [1500, 250], scale=1)
+    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=2)
 
 
   def emptyBg(self, speed):
