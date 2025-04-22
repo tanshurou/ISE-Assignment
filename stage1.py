@@ -10,6 +10,8 @@ from utilities import getImage
 import pygame
 from characterMovementAll import CharacterAnimation
 
+import pygame.mixer
+
 pygame.init()
 
 clock = pygame.time.Clock()
@@ -139,6 +141,83 @@ class InventoryBar():
   def draw(self, coordinate_X, coordinate_y):
     screen.blit(self.image, (coordinate_X, coordinate_y))
 
+class DialogueBox():
+  def __init__(self):
+    dialogue_box_path = Path("assets") / "ui_elements" / "Sprite sheets" / "Dialouge UI" / "Premade dialog box  big.png"
+    dialogue_box = pygame.image.load(dialogue_box_path)
+    self.dialogue_img = resizeObject(dialogue_box, 3)
+    self.text_y = 300
+    self.list_of_text = []
+    self.counter = 0
+    self.active_text = 0
+    self.done = False
+    self.visible = True
+
+    #sound effect
+    sound_path = Path("assets") / "audio" / "Text Sound Effect.wav"
+    self.sound_effect = pygame.mixer.Sound(sound_path)
+    self.sound_effect.set_volume(0.7)
+    self.last_char_count = 0
+
+  def draw(self, character, list_of_text, speech_duration):
+    if self.visible:
+      #setting up fonts
+      font_path = Path("assets") / "font" / "PressStart2P.ttf"
+      name_font = pygame.font.Font(font_path, 26)
+      text_font = pygame.font.Font(font_path, 18)
+
+      speed = 3
+
+      self.list_of_text = list_of_text
+
+      #render character name and dialogue box
+      character_name = name_font.render(character, True, brown)
+      screen.blit(self.dialogue_img, (194, 540))
+      screen.blit(character_name, (390,565))
+
+      #preprocess text for warping
+      words = list_of_text[0].split(" ")
+      lines = []
+      line = ""
+      max_width = 700
+
+      for word in words:
+          test_line = line + word + " "
+          test_surface = text_font.render(test_line, True, brown)
+          if test_surface.get_width() > max_width:
+              lines.append(line)
+              line = word + " "
+          else:
+              line = test_line
+      if line:
+          lines.append(line)
+
+      #updating counter
+      if self.counter < speed * len(list_of_text[self.active_text]):
+          self.counter += 1
+          if self.counter > self.last_char_count and self.counter % 6 == 0:
+            self.sound_effect.play()
+      elif self.counter >= speed * len(list_of_text[self.active_text]):
+          self.done = True
+
+      text = text_font.render(list_of_text[self.active_text][0:self.counter // speed], True, brown)  
+      screen.blit(text, (400, 627))
+
+
+  def handle_input(self, event):
+      if event.type == pygame.KEYDOWN and self.done:
+        if self.active_text < len(self.list_of_text) - 1:
+            self.active_text += 1
+            self.counter = 0
+            self.done = False
+        else:
+            self.visible = False 
+
+
+
+
+
+
 class DistanceTracker():
   def __init__(self):
     signboard_path = Path("assets") / "stage_1_bg" / "2 Objects" / "3 Pointer" / "4.png"
@@ -194,8 +273,9 @@ class Scenes():
     self.stamina = StaminaBar()
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
-    self.fence = ObstacleManager(self.scroll_speed)
-    self.enemy_mushroom = EnemyMushroomManager()
+    self.fence = FenceManager(self.scroll_speed)
+    self.mushroom = MushroomManager(self.fence.fence_group)
+    self.dialogue = DialogueBox()
     
     # Wallace
     Blue = (0, 162, 232)
@@ -226,7 +306,7 @@ class Scenes():
     if abs(self.scrolled) > self.stage1_bg_img.get_width():
       self.scrolled = 0
   
-  def scene1(self, speed):
+  def level1(self, speed, spawn_mushroom, num_of_mushroom = 1):
     self.scroll_speed = speed
     #display UI
     screen.blit(chara_board, (30, 30))
@@ -234,10 +314,13 @@ class Scenes():
     self.health.draw()
     self.stamina.draw()
     self.fence.update(self.scroll_speed)  #spawn fences
-    #self.mushroom_manager.spawn(self.fence.fence_group)           #spawn mushrooms
-    self.mushroom.animation(5,1)
     self.distance.updateDistance(speed)   #track distance
     self.inventory.draw(308, 575)
+    if spawn_mushroom:
+      self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
+
+    list_of_text = ["hellllllo", "my name is ice king"]
+    self.dialogue.draw("Ice King", list_of_text, 3)
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
@@ -362,7 +445,6 @@ class Mushroom(pygame.sprite.Sprite):
         placeholder.append(img)
         #screen.blit(img, (200,200))
       self.animation_list.append(placeholder)
-    print(f"Rect size: {self.rect.size}")
 
 
 
@@ -396,29 +478,33 @@ class MushroomManager:
     self.max_mushroom = 2
     self.fence_group = fence_group
 
-  def spawn(self, max_mushroom):
-    max_attempts = 5
+  def spawn(self):
+    new_mushroom = Mushroom(random.choice(self.y_positions))
+    return new_mushroom
 
-    for i in range(max_attempts):
-      new_mushroom = Mushroom(random.choice(self.y_positions))
-      
-      if (pygame.sprite.spritecollideany(new_mushroom, self.fence_group)) is None and (pygame.sprite.spritecollideany(new_mushroom, self.mushroom_group)) is None:
-        self.mushroom_group.add(new_mushroom)
-
-  def update(self):
-    for mushroom in self.mushroom_group:
-      print("")
-      
-
+  def update(self, max_mushroom, scroll_speed):
+    self.max_mushroom = max_mushroom
     if len(self.mushroom_group) < self.max_mushroom:
-      self.spawn()
+      mushroom = self.spawn()
+      if not (
+          pygame.sprite.spritecollide(mushroom, self.fence_group, False) or
+          pygame.sprite.spritecollide(mushroom, self.mushroom_group, False)
+      ):
+        self.mushroom_group.add(mushroom)
+
+    for fence in self.fence_group:
+       if (pygame.sprite.spritecollide(fence, self.mushroom_group, False)):
+          fence.kill()
+
+    for mushroom in self.mushroom_group:
+      mushroom.animation(scroll_speed, 0)
+      if mushroom.x < -100:
+         mushroom.kill()
       
-    
 
 
 
-
-class ObstacleManager:
+class FenceManager:
   def __init__(self, scroll_speed):
     self.fence_group = pygame.sprite.Group()
     self.last_fence_time = 0
@@ -441,34 +527,35 @@ class ObstacleManager:
       self.spawn_fence()
       self.last_fence_time = current_time
       self.spawn_interval = random.randint(self.min_time, self.max_time)
-
+    
     for fence in self.fence_group:
       fence.update(scroll_speed)
-      if fence.rect.right < -10:
-        print("here")
+      if fence.fence_x < -50:
         fence.kill()
 
     self.fence_group.draw(screen) 
 
 scene = Scenes()
 
-# # start
-# while running:
+#start
+while running:
 
-#   clock.tick(FPS)
-
-
-#   scene.emptyBg(2)
-#   scene.scene1(2)
-  
-#   #event handler
-#   for event in pygame.event.get():
-#     if event.type == pygame.QUIT:
-#       running = False
+  clock.tick(FPS)
 
 
-#   pygame.display.update()
+  scene.emptyBg(5)
+  scene.level1(5, True, 2)
 
-# pygame.quit()
+# event handler
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT:
+      running = False
+    
+    scene.dialogue.handle_input(event)
+
+
+  pygame.display.update()
+
+pygame.quit()
 
 
