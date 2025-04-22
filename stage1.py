@@ -296,7 +296,7 @@ class Scenes():
             self.ice_king.pos[1] = 150 + hover_offset
         else:
             if self.ice_king.action != 1:
-               self.ice_king.set_action(1)
+                self.ice_king.set_action(1)
             if not self.special_effect_visible:
                 self.special_effect.set_action(0)
                 self.special_effect_visible = True
