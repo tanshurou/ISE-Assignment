@@ -235,13 +235,14 @@ class DialogueBox():
 
 
   def handle_input(self, event):
-      if event.type == pygame.KEYDOWN and self.done:
-        if self.active_text < len(self.script) - 1:
-            self.active_text += 1
-            self.counter = 0
-            self.done = False
-        else:
-            self.visible = False 
+      if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_RETURN and self.done:
+          if self.active_text < len(self.script) - 1:
+              self.active_text += 1
+              self.counter = 0
+              self.done = False
+          else:
+              self.visible = False 
 
 
 
