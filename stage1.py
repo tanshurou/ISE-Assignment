@@ -11,6 +11,7 @@ import pygame
 from characterMovementAll import CharacterAnimation
 
 import pygame.mixer
+from PIL import Image
 
 pygame.init()
 
@@ -72,6 +73,12 @@ class HealthBar():
       img = resizeObject(img, 4)
       self.images.append(img)
 
+    sound_path = Path("assets") / "audio" / "take damage.mp3"
+    sound_path2 = Path("assets") / "audio" / "heal.mp3"
+    self.take_damage_sound_effect = pygame.mixer.Sound(sound_path)
+    self.take_damage_sound_effect.set_volume(1)
+    self.heal_sound_effect = pygame.mixer.Sound(sound_path2)
+
   def draw(self):
     num_of_full_hearts = self.current_health // 2
     num_of_half_hearts = self.current_health % 2
@@ -94,10 +101,12 @@ class HealthBar():
   def takeDamage(self, amount):
     if self.current_health > 0:
       self.current_health -= amount
+    self.take_damage_sound_effect.play()
 
   def heal(self, amount):
     if self.current_health < self.max_health:
       self.current_health += amount
+    self.heal_sound_effect.play()
 
 class StaminaBar():
   def __init__(self):
@@ -147,7 +156,7 @@ class DialogueBox():
     dialogue_box = pygame.image.load(dialogue_box_path)
     self.dialogue_img = resizeObject(dialogue_box, 3)
     self.text_y = 300
-    self.list_of_text = []
+    self.script = []
     self.counter = 0
     self.active_text = 0
     self.done = False
@@ -159,24 +168,45 @@ class DialogueBox():
     self.sound_effect.set_volume(0.7)
     self.last_char_count = 0
 
-  def draw(self, character, list_of_text, speech_duration):
+  def draw(self, script_dict):
+    self.script = script_dict
+    character = script_dict[self.active_text]["speaker"]
+    line = script_dict[self.active_text]["line"]
+
+    #set character potrait
+    potrait_path = ""
+    if character == "Finn":
+      potrait_path = Path("assets") / "character" / "Finn Potrait.png"
+    elif character == "Ice King":
+      potrait_path = Path("assets") / "character" / "Ice King Potrait.png"
+    elif character == "Princess Bubblegum":
+      potrait_path = Path("assets") / "character" / "Princess Bubblegum Potrait.png"
+    elif character == "Jake":
+       potrait_path = Path("assets") / "character" / "Jake Potrait.png"
+
+    img = Image.open(potrait_path)
+    img.save(potrait_path, icc_profile=None)
+    potrait_img = pygame.image.load(potrait_path)
+    potrait_img = resizeObject(potrait_img, 0.6)
+    
+    #setting up fonts
+    font_path = Path("assets") / "font" / "PressStart2P.ttf"
+    name_font = pygame.font.Font(font_path, 26)
+    text_font = pygame.font.Font(font_path, 18)
+
+    #only runs when set to visible
     if self.visible:
-      #setting up fonts
-      font_path = Path("assets") / "font" / "PressStart2P.ttf"
-      name_font = pygame.font.Font(font_path, 26)
-      text_font = pygame.font.Font(font_path, 18)
+      speed = 3 #type writer effect speed
 
-      speed = 3
 
-      self.list_of_text = list_of_text
-
-      #render character name and dialogue box
+      #render character name, dialogue box, character potrait
       character_name = name_font.render(character, True, brown)
       screen.blit(self.dialogue_img, (194, 540))
       screen.blit(character_name, (390,565))
+      screen.blit(potrait_img, (203, 550))
 
       #preprocess text for warping
-      words = list_of_text[0].split(" ")
+      words = line.split(" ")
       lines = []
       line = ""
       max_width = 700
@@ -193,20 +223,20 @@ class DialogueBox():
           lines.append(line)
 
       #updating counter
-      if self.counter < speed * len(list_of_text[self.active_text]):
+      if self.counter < speed * len(line):
           self.counter += 1
           if self.counter > self.last_char_count and self.counter % 6 == 0:
             self.sound_effect.play()
-      elif self.counter >= speed * len(list_of_text[self.active_text]):
+      elif self.counter >= speed * len(line):
           self.done = True
 
-      text = text_font.render(list_of_text[self.active_text][0:self.counter // speed], True, brown)  
+      text = text_font.render(line[0:self.counter // speed], True, brown)  
       screen.blit(text, (400, 627))
 
 
   def handle_input(self, event):
       if event.type == pygame.KEYDOWN and self.done:
-        if self.active_text < len(self.list_of_text) - 1:
+        if self.active_text < len(self.script) - 1:
             self.active_text += 1
             self.counter = 0
             self.done = False
@@ -319,8 +349,15 @@ class Scenes():
     if spawn_mushroom:
       self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
 
-    list_of_text = ["hellllllo", "my name is ice king"]
-    self.dialogue.draw("Ice King", list_of_text, 3)
+    script = [{"speaker" : "Ice King", "line" : "Helllo"},
+              {"speaker" : "Ice King", "line" : "My name is Ice King"},
+              {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
+              {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
+              {"speaker" : "Finn", "line" : "Helloooo"},
+              {"speaker" : "Finn", "line" : "My name is Finn!"},
+              {"speaker" : "Jake", "line" : "Helloooo"},
+              {"speaker" : "Jake", "line" : "My name is Jake!"}]
+    self.dialogue.draw(script)
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
