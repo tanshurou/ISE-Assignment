@@ -11,5 +11,4 @@ def getImage(spritesheet, frame, width, height, scale, colour=None):
     image = pygame.Surface((width, height), pygame.SRCALPHA)
     image.blit(spritesheet, (0, 0), (frame * width, 0, width, height))
     image = pygame.transform.scale(image, (width * scale, height * scale))
-
     return image
