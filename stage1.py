@@ -148,19 +148,27 @@ class InventoryBar():
     self.image = inventory_img
     self.hover_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "hover.wav" )
     self.clicked_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "click2.mp3")
+    self.pickup_sound_effect = self.clicked_sound_effect
     self.slots = []
-    self.items = []
-    self.currently_hovering = False
+    self.items = [None, None, None, None, None, None, None, None]
+    self.currently_hovering_slot = False
+    potionImages = Potions(0,0)
     
     for slot in range(7):
       slot_rect = pygame.Rect(322 + (slot * 96), 590, 79, 79)
       self.slots.append(slot_rect)
 
+    self.potion_images = {i: potionImages.animation_list[i][0] for i in range(5)}
 
 
   def draw(self, coordinate_X, coordinate_y):
     screen.blit(self.image, (coordinate_X, coordinate_y))
-     
+    for slot_index in range(7):
+      if self.items[slot_index] != None:
+        screen.blit(self.potion_images[self.items[slot_index]], (self.slots[slot_index].x + 15, self.slots[slot_index].y +15))
+
+
+
   def handle_hover(self):
     mouse_pos = pygame.mouse.get_pos()
     hovering_any_slot = False
@@ -183,12 +191,29 @@ class InventoryBar():
   def handle_click(self, event):
      if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
       for slot_index, slot_rect in enumerate(self.slots):
-        if slot_rect.collidepoint(pygame.mouse.get_pos()):
+        if slot_rect.collidepoint(pygame.mouse.get_pos()) and self.items[slot_index] != None:
             print("clicked")
             self.clicked_sound_effect.play()
+            self.use_potion(slot_index)
 
-  #def add_potion(self, type):
-     
+  def add_potion(self, potion_type):
+    for slot in range(len(self.slots)):
+      if self.items[slot] == None:
+        self.items[slot] = potion_type
+        self.pickup_sound_effect.play()
+        print(f"Added potion of type {potion_type} to slot {slot}")
+        return True
+      
+    print("inventory full")
+    return False
+  
+  def use_potion(self, item_index):
+     self.items[item_index] = None
+     print("used potion")
+     return True
+  
+    
+    
      
 
   
@@ -237,18 +262,18 @@ class Potions(pygame.sprite.Sprite):
     pygame.draw.rect(screen, (255,0,0), self.rect, 3)
     
     screen.blit(self.animation_list[self.potion_type][self.animation_index], (self.x, self.y))
-
-  def effect(self):
-     return self.animation_index
+ 
+     
 
 class PotionManager:
-  def __init__(self, fence_group, mushroom_group):
+  def __init__(self, fence_group, mushroom_group, inventory):
     self.potion_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
     self.y_positions = [275,375,475]
     self.fence_group = fence_group
     self.mushroom_group = mushroom_group
+    self.inventory = inventory
 
   def try_spawn(self):
       """Attempts to spawn a potion if it doesn't collide with obstacles"""
@@ -268,6 +293,14 @@ class PotionManager:
           self.potion_group.add(new_potion)
           self.last_spawned_time = current_time
 
+      for fence in self.fence_group:
+        if (pygame.sprite.spritecollide(fence, self.potion_group, False)):
+            fence.kill()
+
+      for mushroom in self.mushroom_group:
+         if (pygame.sprite.spritecollide(mushroom, self.potion_group, False)):
+            mushroom.kill() 
+
   def update(self, scroll_speed):
     self.try_spawn()
 
@@ -277,6 +310,12 @@ class PotionManager:
     for potion in list(self.potion_group):
       if potion.x < -50: 
           potion.kill()
+
+  def pick_up_potion(self, finn):
+    for potion in self.potion_group:
+      if pygame.sprite.spritecollide(potion, pygame.sprite.Group(finn), True):
+        self.inventory.add_potion(potion.potion_type)
+        potion.kill()
 
   
 
@@ -439,7 +478,8 @@ class Scenes():
     self.fence = FenceManager(self.scroll_speed)
     self.mushroom = MushroomManager(self.fence.fence_group)
     self.dialogue = DialogueBox()
-    self.potion = PotionManager(self.mushroom.mushroom_group, self.fence.fence_group)
+    self.potion = PotionManager(self.mushroom.mushroom_group, self.fence.fence_group, self.inventory)
+    self.finnSR = TestFinn()
     
     # Wallace
     Blue = (0, 162, 232)
@@ -484,6 +524,8 @@ class Scenes():
       self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
     self.potion.update(speed)
     self.inventory.handle_hover()
+    self.finnSR.draw()    #DELETE LTR
+    self.potion.pick_up_potion(self.finnSR)
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -636,6 +678,30 @@ class Mushroom(pygame.sprite.Sprite):
 
       screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
       pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
+
+  #def handle_collision(self):
+     
+
+class TestFinn(pygame.sprite.Sprite):
+  def __init__(self):
+    super().__init__()
+    ori = pygame.image.load(Path("assets") / "character" / "Finn Potrait.PNG")
+    self.img = resizeObject(ori, 0.5)
+    self.x = 0
+    self.y = 0
+    self.rect = pygame.Rect(self.x + 20, self.y, 100, 107)
+
+  def get_input(self, event):
+    mouse_pos = pygame.mouse.get_pos()
+
+    self.x = mouse_pos[0]
+    self.y = mouse_pos[1]
+    self.rect = pygame.Rect(self.x + 20 , self.y, 100, 107)
+    
+  def draw(self):
+    pygame.draw.rect(screen, (255,0,0), self.rect, 3)
+    screen.blit(self.img, (self.x, self.y))
+   
     
 class MushroomManager:
   def __init__(self, fence_group):
@@ -720,6 +786,7 @@ while running:
     
     scene.dialogue.handle_input(event)
     scene.inventory.handle_click(event)
+    scene.finnSR.get_input(event)
 
   pygame.display.update()
 
