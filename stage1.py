@@ -58,7 +58,66 @@ inventory_img = pygame.image.load(inventory_path)
 inventory_img = resizeObject(inventory_img, 2)
 
 
+    
+class Score():
+  def __init__(self):
+    self.name = None
+    self.time = None
 
+
+class LeaderBoard():
+  def __init__(self):
+    self.scores = []
+
+    path = Path("assets") / "ui_elements" / "leaderboard.png"
+    img = pygame.image.load(path)
+    self.img = resizeObject(img, 5)
+
+    self.load_file()
+    self.sort()
+    self.draw()
+
+  def load_file(self):
+    try:
+      with open(Path("leaderboard.txt"), "r") as file:
+        for line in file:
+          score = Score()
+          placeholder = line.split(",")
+          score.name = placeholder[0]
+          score.time = placeholder[1].strip()
+          self.scores.append(score)
+    except FileNotFoundError:
+      print("File not found")
+  
+  def sort(self):
+     n = len(self.scores)
+     for i in range(n):
+        for j in range(0, n- i - 1):
+          if float(self.scores[j].time) > float(self.scores[j+1].time):
+            self.scores[j], self.scores[j + 1] = self.scores[j + 1], self.scores[j]
+            
+
+  def draw(self):
+    font = large_font.render("Leaderboard", True, brown)
+    screen.blit(self.img, (380, 58))
+    screen.blit(font, (474,110))
+    print(font.get_size())
+
+    for score in range(len(self.scores)):
+      place = str(score + 1) + "."
+      name = self.scores[score].name
+      time = str(self.scores[score].time)
+
+      place_display = small_font.render(place, True, brown)
+      name_display = small_font.render(name, True, brown)
+      time_display = small_font.render(time, True, brown)
+
+      screen.blit(place_display, (430, 185 + 40 * score))
+      screen.blit(name_display, (500, 185 + 40 * score))
+      screen.blit(time_display, (775, 185 + 40 * score))
+      
+
+    
 
 class HealthBar():
   def __init__(self):
@@ -266,7 +325,7 @@ class Potions(pygame.sprite.Sprite):
      
 
 class PotionManager:
-  def __init__(self, fence_group, mushroom_group, inventory):
+  def __init__(self, fence_group=None, mushroom_group=None, inventory=None):
     self.potion_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
@@ -292,17 +351,19 @@ class PotionManager:
           # No collisions, add to group
           self.potion_group.add(new_potion)
           self.last_spawned_time = current_time
-
+  def check_collisions(self):
+      # Check collisions between potions and obstacles
       for fence in self.fence_group:
-        if (pygame.sprite.spritecollide(fence, self.potion_group, False)):
-            fence.kill()
+          if pygame.sprite.spritecollide(fence, self.potion_group, True):
+              fence.kill()
 
       for mushroom in self.mushroom_group:
-         if (pygame.sprite.spritecollide(mushroom, self.potion_group, False)):
-            mushroom.kill() 
+          if pygame.sprite.spritecollide(mushroom, self.potion_group, True):
+              mushroom.kill()
 
   def update(self, scroll_speed):
     self.try_spawn()
+    self.check_collisions()
 
     for potion in self.potion_group:
       potion.animation(scroll_speed)
@@ -475,11 +536,20 @@ class Scenes():
     self.stamina = StaminaBar()
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
-    self.fence = FenceManager(self.scroll_speed)
-    self.mushroom = MushroomManager(self.fence.fence_group)
     self.dialogue = DialogueBox()
-    self.potion = PotionManager(self.mushroom.mushroom_group, self.fence.fence_group, self.inventory)
-    self.finnSR = TestFinn()
+
+    self.finnSR = Mouse()
+
+    # Step 1: Create all manager objects without dependencies first
+    self.fence = FenceManager(self.scroll_speed)
+    self.mushroom = MushroomManager(None, None)  # Temporarily pass None
+    self.potion = PotionManager(None, None, self.inventory)  # Temporarily pass None
+
+    # Step 2: After all objects are created, set their group references
+    self.mushroom.fence_group = self.fence.fence_group
+    self.mushroom.potion_group = self.potion.potion_group
+    self.potion.mushroom_group = self.mushroom.mushroom_group
+    self.potion.fence_group = self.fence.fence_group
     
     # Wallace
     Blue = (0, 162, 232)
@@ -515,6 +585,14 @@ class Scenes():
     #display UI
     screen.blit(chara_board, (30, 30))
     screen.blit(chara_frame, (55, 45))
+
+    #finn potrait
+    finn_potrait_path = Path("assets") / "character" / "Finn Potrait.PNG"
+    finn_img = Image.open(finn_potrait_path)
+    finn_img.save(finn_potrait_path, icc_profile = None)
+    finn_img = pygame.image.load(finn_potrait_path)
+    finn_img = resizeObject(finn_img, 0.4)
+    screen.blit(finn_img, (61, 60))
     self.health.draw()
     self.stamina.draw()
     self.fence.update(self.scroll_speed)  #spawn fences
@@ -682,11 +760,11 @@ class Mushroom(pygame.sprite.Sprite):
   #def handle_collision(self):
      
 
-class TestFinn(pygame.sprite.Sprite):
+class Mouse(pygame.sprite.Sprite):
   def __init__(self):
     super().__init__()
-    ori = pygame.image.load(Path("assets") / "character" / "Finn Potrait.PNG")
-    self.img = resizeObject(ori, 0.5)
+    ori = pygame.image.load(Path("assets") / "ui_elements" / "mouse.png")
+    self.img = resizeObject(ori, 2)
     self.x = 0
     self.y = 0
     self.rect = pygame.Rect(self.x + 20, self.y, 100, 107)
@@ -696,7 +774,7 @@ class TestFinn(pygame.sprite.Sprite):
 
     self.x = mouse_pos[0]
     self.y = mouse_pos[1]
-    self.rect = pygame.Rect(self.x + 20 , self.y, 100, 107)
+    self.rect = pygame.Rect(self.x + 20 , self.y, 50, 50)
     
   def draw(self):
     pygame.draw.rect(screen, (255,0,0), self.rect, 3)
@@ -704,13 +782,14 @@ class TestFinn(pygame.sprite.Sprite):
    
     
 class MushroomManager:
-  def __init__(self, fence_group):
+  def __init__(self, fence_group=None, potion_group=None):
     self.mushroom_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
     self.y_positions = [215,315,415]
     self.max_mushroom = 2
     self.fence_group = fence_group
+    self.potion_group = potion_group
 
   def spawn(self):
     new_mushroom = Mushroom(random.choice(self.y_positions))
@@ -722,7 +801,8 @@ class MushroomManager:
       mushroom = self.spawn()
       if not (
           pygame.sprite.spritecollide(mushroom, self.fence_group, False) or
-          pygame.sprite.spritecollide(mushroom, self.mushroom_group, False)
+          pygame.sprite.spritecollide(mushroom, self.mushroom_group, False) or
+          pygame.sprite.spritecollide(mushroom, self.potion_group, False)
       ):
         self.mushroom_group.add(mushroom)
 
@@ -773,12 +853,12 @@ scene = Scenes()
 
 #start
 while running:
-
+  pygame.mouse.set_visible(0)
   clock.tick(FPS)
 
 
-  scene.emptyBg(5)
-  scene.level1(5, True, 2)
+  scene.emptyBg(10)
+  scene.level1(10, True, 2)
 # event handler
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
@@ -787,6 +867,7 @@ while running:
     scene.dialogue.handle_input(event)
     scene.inventory.handle_click(event)
     scene.finnSR.get_input(event)
+    
 
   pygame.display.update()
 
