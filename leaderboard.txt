@@ -1,0 +1,10 @@
+name,1.23
+name2,2.23
+name3,0.01
+name3,0.01
+name3,0.01
+name3,0.01
+name3,4.01
+name3,0.01
+name3,0.01
+name3,0.01
