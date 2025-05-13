@@ -957,9 +957,9 @@ class Stage1_Gameplay:
 
     def shoot_bullet(self):
         bullet_x = self.scene.finn.pos[0] + 40
-        bullet_y = self.scene.finn.pos[1] + 10
+        bullet_y = self.scene.finn.pos[1] + 25
         new_bullet = CharacterAnimation(
-            self.bullet_path,[4],[50],[100],60,self.unwanted_colors,[bullet_x, bullet_y],scale=0.5)
+            self.bullet_path, [4], [50], [100], 60, self.unwanted_colors, [bullet_x, bullet_y], scale= 1)
         new_bullet.set_action(0)
         self.bullets.append(new_bullet)
         self.is_shooting = True
@@ -969,7 +969,6 @@ class Stage1_Gameplay:
 pygame.init()
 scene = Scenes()
 game = Stage1_Gameplay(scene)
-
 running = True
 clock = pygame.time.Clock()
 
