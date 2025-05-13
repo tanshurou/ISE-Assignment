@@ -860,133 +860,134 @@ class FenceManager:
         fence.kill()
 
     self.fence_group.draw(screen) 
-
+  
 class Stage1_Gameplay:
-  def __init__(self, scene):
-      self.scene = scene
-      self.clock = pygame.time.Clock()
-      self.FPS = 60
-      
-      # Character control
-      self.is_jumping = False
-      self.jump_velocity = -8
-      self.gravity = 0.4
-      self.finn_y_velocity = 0
-      self.is_shooting = False
-      self.shooting_timer = 0
+    def __init__(self, scene):
+        self.scene = scene
+        self.clock = pygame.time.Clock()
+        self.FPS = 60
+        
+        # Character control
+        self.is_jumping = False
+        self.jump_velocity = -8
+        self.gravity = 0.4
+        self.finn_y_velocity = 0
+        self.is_shooting = False
+        self.shooting_timer = 0
 
-      self.lanes = [220, 310, 410]
-      self.current_lane = 1
-      self.lane_target_y = self.lanes[self.current_lane]
+        # Lanes control
+        self.lanes = [220, 310, 410]
+        self.current_lane = 1
+        self.lane_target_y = self.lanes[self.current_lane]
 
-      # Bullet control
-      self.bullets = []
-      self.BULLET_SPEED = 6
-      self.bullet_explosion = False
-      self.explosion_timer = 0
+        # Bullet control
+        self.bullets = []
+        self.BULLET_SPEED = 6
+        self.bullet_explosion = False
+        self.explosion_timer = 0
 
-      # Bullet animation setup
-      self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
-      self.unwanted_colors = [(0, 162, 232)]
+        # Bullet animation setup
+        self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
+        self.unwanted_colors = [(0, 162, 232)]
 
-  def update(self):
-      self.scene.finn.move(dx=0)
-      # Smooth lane movement
-      if not self.is_jumping:
-          if abs(self.scene.finn.pos[1] - self.lane_target_y) > 1:
-              if self.scene.finn.pos[1] < self.lane_target_y:
-                  self.scene.finn.pos[1] += 5
-              elif self.scene.finn.pos[1] > self.lane_target_y:
-                  self.scene.finn.pos[1] -= 5
-          else:
-              self.scene.finn.pos[1] = self.lane_target_y
+    def update(self):
+        self.scene.finn.move(dx=0)
+        # Smooth lane movement
+        if not self.is_jumping:
+            if abs(self.scene.finn.pos[1] - self.lane_target_y) > 1:
+                if self.scene.finn.pos[1] < self.lane_target_y:
+                    self.scene.finn.pos[1] += 5
+                elif self.scene.finn.pos[1] > self.lane_target_y:
+                    self.scene.finn.pos[1] -= 5
+            else:
+                self.scene.finn.pos[1] = self.lane_target_y
 
-      if self.is_jumping:
-          self.finn_y_velocity += self.gravity
-          self.scene.finn.pos[1] += self.finn_y_velocity
-          if self.scene.finn.pos[1] >= self.lanes[self.current_lane]:
-              self.scene.finn.pos[1] = self.lanes[self.current_lane]
-              self.is_jumping = False
-              self.scene.finn.set_action(0)
+        if self.is_jumping:
+            self.finn_y_velocity += self.gravity
+            self.scene.finn.pos[1] += self.finn_y_velocity
+            if self.scene.finn.pos[1] >= self.lanes[self.current_lane]:
+                self.scene.finn.pos[1] = self.lanes[self.current_lane]
+                self.is_jumping = False
+                self.scene.finn.set_action(0)
 
-      for bullet in self.bullets[:]:
-          bullet.pos[0] += self.BULLET_SPEED
-          bullet.update()
+        for bullet in self.bullets[:]:
+            bullet.pos[0] += self.BULLET_SPEED
+            bullet.update()
 
-      if self.bullet_explosion and pygame.time.get_ticks() - self.explosion_timer > 800:
-          self.bullet_explosion = False
+        if self.bullet_explosion and pygame.time.get_ticks() - self.explosion_timer > 800:
+            self.bullet_explosion = False
 
-      if self.is_shooting:
-          if pygame.time.get_ticks() - self.shooting_timer > 200:
-              self.scene.finn.set_action(0)
-              self.is_shooting = False
+        if self.is_shooting:
+            if pygame.time.get_ticks() - self.shooting_timer > 200:
+                self.scene.finn.set_action(0)
+                self.is_shooting = False
 
-      self.scene.finn.update()
-      
-  def draw(self, screen):
-      for bullet in self.bullets:
-          bullet.draw(screen)
-      self.scene.finn.draw(screen)
+        self.scene.finn.update()
 
-  def handle_input(self, event):
-      if event.type == pygame.KEYDOWN:
-          if event.key == pygame.K_w and self.current_lane > 0:
-              self.current_lane -= 1
-              self.lane_target_y = self.lanes[self.current_lane]
+    def draw(self, screen):
+        for bullet in self.bullets:
+            bullet.draw(screen)
+        self.scene.finn.draw(screen)
 
-          if event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
-              self.current_lane += 1
-              self.lane_target_y = self.lanes[self.current_lane]
+    def handle_input(self, event):
+        # Prevent shooting while jumping
+        if self.is_jumping:
+            return
+        
+        if event.type == pygame.KEYDOWN:
+            # Prevent lane changes while jumping
+            if not self.is_jumping:
+                if event.key == pygame.K_w and self.current_lane > 0:
+                    self.current_lane -= 1
+                    self.lane_target_y = self.lanes[self.current_lane]
+                if event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
+                    self.current_lane += 1
+                    self.lane_target_y = self.lanes[self.current_lane]
 
-          if event.key == pygame.K_SPACE:
-              if not self.is_jumping:
-                  self.is_jumping = True
-                  self.finn_y_velocity = self.jump_velocity
-                  self.scene.finn.set_action(1)
+            if event.key == pygame.K_SPACE:
+                if not self.is_jumping:
+                    self.is_jumping = True
+                    self.finn_y_velocity = self.jump_velocity
+                    self.scene.finn.set_action(1)
 
-          if event.key == pygame.K_RETURN and self.scene.gameplay_started:
-              new_bullet = CharacterAnimation(self.bullet_path, [4], [50], [100], 60,
-                  self.unwanted_colors, [self.scene.finn.pos[0] + 40, self.scene.finn.pos[1] + 10], scale=0.5)
-              new_bullet.set_action(0)
-              self.bullets.append(new_bullet)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                self.scene.finn.set_action(2)
+                self.shoot_bullet()
 
-      if event.type == pygame.MOUSEBUTTONDOWN:
-          if event.button == 2 and self.scene.gameplay_started:
-              self.shoot_bullet()
-              self.scene.finn.set_action(2)
+    def shoot_bullet(self):
+        bullet_x = self.scene.finn.pos[0] + 40
+        bullet_y = self.scene.finn.pos[1] + 10
+        new_bullet = CharacterAnimation(
+            self.bullet_path,[4],[50],[100],60,self.unwanted_colors,[bullet_x, bullet_y],scale=0.5)
+        new_bullet.set_action(0)
+        self.bullets.append(new_bullet)
+        self.is_shooting = True
+        self.shooting_timer = pygame.time.get_ticks()
 
-  def shoot_bullet(self):
-      new_bullet = CharacterAnimation(
-          self.bullet_path, [4], [50], [100], 60,
-          self.unwanted_colors,
-          [self.scene.finn.pos[0] + 120, self.scene.finn.pos[1] + 10],
-          scale=0.5
-      )
-      new_bullet.set_action(0)
-      self.bullets.append(new_bullet)
-      self.scene.finn.set_action(2)
-      self.is_shooting = True
-      self.shooting_timer = pygame.time.get_ticks()
-                
-if __name__ == "__main__":
-    pygame.init()
-    scene = Scenes()
-    game = Stage1_Gameplay(scene)
-    running = True
-    clock = pygame.time.Clock()
-    while running:
-        clock.tick(game.FPS)
-        scene.emptyBg(10)
-        scene.level1(10, True, 2)
-        game.update()
-        game.draw(screen)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            scene.finnSR.get_input(event)
-            game.handle_input(event)
-            scene.dialogue.handle_input(event)
-            scene.inventory.handle_click(event)
-        pygame.display.update()
+# Start
+pygame.init()
+scene = Scenes()
+game = Stage1_Gameplay(scene)
 
-    pygame.quit()
+running = True
+clock = pygame.time.Clock()
+
+while running:
+    clock.tick(game.FPS)
+    scene.emptyBg(10)
+    scene.level1(10, True, 2)
+    game.update()
+    game.draw(screen)
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        scene.finnSR.get_input(event)
+        game.handle_input(event)
+        scene.dialogue.handle_input(event)
+        scene.inventory.handle_click(event)
+        
+    pygame.display.update()
+
+pygame.quit()
