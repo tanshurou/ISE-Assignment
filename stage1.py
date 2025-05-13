@@ -40,11 +40,6 @@ chara_frame_path = Path("assets") / "ui_elements" / "frame.png"
 distance_tracker_path = Path("assets") / "ui_elements" / "distance tracker.png"
 inventory_path = Path("assets") / "ui_elements" / "inventory.png"
 
-
-
-
-
-
 chara_board = pygame.image.load(chara_board_path)
 chara_board = resizeObject(chara_board,6)
 
@@ -57,13 +52,11 @@ distance_tracker = resizeObject(distance_tracker, 5.5)
 inventory_img = pygame.image.load(inventory_path)
 inventory_img = resizeObject(inventory_img, 2)
 
-
     
 class Score():
   def __init__(self):
     self.name = None
     self.time = None
-
 
 class LeaderBoard():
   def __init__(self):
@@ -115,8 +108,6 @@ class LeaderBoard():
       screen.blit(place_display, (430, 185 + 40 * score))
       screen.blit(name_display, (500, 185 + 40 * score))
       screen.blit(time_display, (775, 185 + 40 * score))
-      
-
     
 
 class HealthBar():
@@ -145,15 +136,15 @@ class HealthBar():
 
     for i in range(num_of_full_hearts):
       screen.blit(self.images[0], (self.x, self.y))
-      self.x += 40;
+      self.x += 40
     
     if num_of_half_hearts:
       screen.blit(self.images[1], (self.x, self.y))
-      self.x += 40;
+      self.x += 40
 
     for i in range(int(num_of_empty_hearts)):
       screen.blit(self.images[2], (self.x, self.y))
-      self.x += 40;
+      self.x += 40
 
     self.x = 290
 
@@ -226,8 +217,6 @@ class InventoryBar():
       if self.items[slot_index] != None:
         screen.blit(self.potion_images[self.items[slot_index]], (self.slots[slot_index].x + 15, self.slots[slot_index].y +15))
 
-
-
   def handle_hover(self):
     mouse_pos = pygame.mouse.get_pos()
     hovering_any_slot = False
@@ -270,11 +259,7 @@ class InventoryBar():
      self.items[item_index] = None
      print("used potion")
      return True
-  
-    
-    
      
-
   
 class Potions(pygame.sprite.Sprite):
   def __init__(self, y, type):
@@ -321,7 +306,6 @@ class Potions(pygame.sprite.Sprite):
     pygame.draw.rect(screen, (255,0,0), self.rect, 3)
     
     screen.blit(self.animation_list[self.potion_type][self.animation_index], (self.x, self.y))
- 
      
 
 class PotionManager:
@@ -377,9 +361,6 @@ class PotionManager:
       if pygame.sprite.spritecollide(potion, pygame.sprite.Group(finn), True):
         self.inventory.add_potion(potion.potion_type)
         potion.kill()
-
-  
-
 
 
 class DialogueBox():
@@ -475,10 +456,6 @@ class DialogueBox():
               self.done = False
           else:
               self.visible = False 
-
-
-
-
 
 
 class DistanceTracker():
@@ -860,133 +837,163 @@ class FenceManager:
         fence.kill()
 
     self.fence_group.draw(screen) 
-  
-class Stage1_Gameplay:
-    def __init__(self, scene):
-        self.scene = scene
-        self.clock = pygame.time.Clock()
-        self.FPS = 60
-        
-        # Character control
-        self.is_jumping = False
-        self.jump_velocity = -8
-        self.gravity = 0.4
-        self.finn_y_velocity = 0
-        self.is_shooting = False
-        self.shooting_timer = 0
 
-        # Lanes control
-        self.lanes = [220, 310, 410]
-        self.current_lane = 1
-        self.lane_target_y = self.lanes[self.current_lane]
 
-        # Bullet control
-        self.bullets = []
-        self.BULLET_SPEED = 6
-        self.bullet_explosion = False
-        self.explosion_timer = 0
+class Finn(pygame.sprite.Sprite):
+  def __init__(self, x, y, health_bar, stamina_bar):
+      super().__init__()
 
-        # Bullet animation setup
-        self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
-        self.unwanted_colors = [(0, 162, 232)]
+      # Positioning and movement
+      self.pos = [x, y]
 
-    def update(self):
-        self.scene.finn.move(dx=0)
-        # Smooth lane movement
-        if not self.is_jumping:
-            if abs(self.scene.finn.pos[1] - self.lane_target_y) > 1:
-                if self.scene.finn.pos[1] < self.lane_target_y:
-                    self.scene.finn.pos[1] += 5
-                elif self.scene.finn.pos[1] > self.lane_target_y:
-                    self.scene.finn.pos[1] -= 5
-            else:
-                self.scene.finn.pos[1] = self.lane_target_y
+      # Animation setup
+      self.finn_path = Path("assets") / "character" / "Finn_Running.png"
+      self.unwanted_colors = [(0, 162, 232)]
+      self.finn = CharacterAnimation(self.finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, self.unwanted_colors, [x, y], scale=1.2)
 
-        if self.is_jumping:
-            self.finn_y_velocity += self.gravity
-            self.scene.finn.pos[1] += self.finn_y_velocity
-            if self.scene.finn.pos[1] >= self.lanes[self.current_lane]:
-                self.scene.finn.pos[1] = self.lanes[self.current_lane]
-                self.is_jumping = False
-                self.scene.finn.set_action(0)
+      # Set the image and rect for the sprite
+      self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
+      self.rect = self.image.get_rect(topleft=(x, y))
 
-        for bullet in self.bullets[:]:
-            bullet.pos[0] += self.BULLET_SPEED
-            bullet.update()
+      # Jumping setup
+      self.is_jumping = False
+      self.jump_velocity = -15
+      self.gravity = 0.6
+      self.finn_y_velocity = 0
 
-        if self.bullet_explosion and pygame.time.get_ticks() - self.explosion_timer > 800:
-            self.bullet_explosion = False
+      # Load jump sound effect
+      self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
+      self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
 
-        if self.is_shooting:
-            if pygame.time.get_ticks() - self.shooting_timer > 200:
-                self.scene.finn.set_action(0)
-                self.is_shooting = False
+      # Shooting control
+      self.last_shoot_time = 0
+      self.shoot_cooldown = 1000
 
-        self.scene.finn.update()
+      # Bullet control
+      self.is_shooting = False
+      self.shooting_timer = 0
+      self.bullets = []
+      self.BULLET_SPEED = 6
+      self.bullet_explosion = False
+      self.explosion_timer = 0
+      self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
 
-    def draw(self, screen):
-        for bullet in self.bullets:
-            bullet.draw(screen)
-        self.scene.finn.draw(screen)
+      # Lane control
+      self.lanes = [220, 310, 410]
+      self.current_lane = 1
+      self.lane_target_y = self.lanes[self.current_lane]
 
-    def handle_input(self, event):
-        # Prevent shooting while jumping
-        if self.is_jumping:
-            return
-        
-        if event.type == pygame.KEYDOWN:
-            # Prevent lane changes while jumping
-            if not self.is_jumping:
-                if event.key == pygame.K_w and self.current_lane > 0:
-                    self.current_lane -= 1
-                    self.lane_target_y = self.lanes[self.current_lane]
-                if event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
-                    self.current_lane += 1
-                    self.lane_target_y = self.lanes[self.current_lane]
+      # Speed control
+      self.speed = 5
+      self.health_bar = health_bar
+      self.stamina_bar = stamina_bar
 
-            if event.key == pygame.K_SPACE:
-                if not self.is_jumping:
-                    self.is_jumping = True
-                    self.finn_y_velocity = self.jump_velocity
-                    self.scene.finn.set_action(1)
+  def update(self):
+      self.finn.update()  # Update the animation
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                self.scene.finn.set_action(2)
-                self.shoot_bullet()
+      # Update the image and rect for the sprite
+      self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
+      self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))  # Update rect with new position
 
-    def shoot_bullet(self):
-        bullet_x = self.scene.finn.pos[0] + 40
-        bullet_y = self.scene.finn.pos[1] + 25
-        new_bullet = CharacterAnimation(
-            self.bullet_path, [4], [50], [100], 60, self.unwanted_colors, [bullet_x, bullet_y], scale= 1)
-        new_bullet.set_action(0)
-        self.bullets.append(new_bullet)
-        self.is_shooting = True
-        self.shooting_timer = pygame.time.get_ticks()
+      # Handle jumping
+      if self.is_jumping:
+          self.finn_y_velocity += self.gravity
+          self.pos[1] += self.finn_y_velocity
+          if self.pos[1] >= self.lanes[self.current_lane]:
+              self.pos[1] = self.lanes[self.current_lane]
+              self.is_jumping = False
+              self.finn.set_action(0)
 
-# Start
-pygame.init()
+      # Smooth lane Changing
+      if abs(self.pos[1] - self.lane_target_y) > 1:
+          if self.pos[1] < self.lane_target_y:
+              self.pos[1] += 5
+          elif self.pos[1] > self.lane_target_y:
+              self.pos[1] -= 5
+      else:
+          self.pos[1] = self.lane_target_y
+
+      # Bullet movement
+      for bullet in self.bullets[:]:
+          bullet.pos[0] += self.BULLET_SPEED
+          bullet.update()
+
+      if self.bullet_explosion and pygame.time.get_ticks() - self.explosion_timer > 800:
+          self.bullet_explosion = False
+
+      if self.is_shooting:
+          if pygame.time.get_ticks() - self.shooting_timer > 200:
+              self.finn.set_action(0)
+              self.is_shooting = False
+
+  def draw(self, screen):
+      screen.blit(self.image, self.rect.topleft)
+      pygame.draw.rect(screen, (255,0,0), self.rect, 3) 
+      for bullet in self.bullets:
+          bullet.draw(screen)
+
+  def handle_input(self, event):
+      if self.is_jumping:
+          return
+      
+      if event.type == pygame.KEYDOWN:
+          if event.key == pygame.K_w and self.current_lane > 0:
+              self.current_lane -= 1
+              self.lane_target_y = self.lanes[self.current_lane]
+          elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
+              self.current_lane += 1
+              self.lane_target_y = self.lanes[self.current_lane]
+          elif event.key == pygame.K_SPACE and not self.is_jumping:
+              self.is_jumping = True
+              self.finn_y_velocity = self.jump_velocity
+              self.finn.set_action(1)
+              self.jump_sound.play()
+
+      if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+          self.finn.set_action(2)
+          self.shoot_bullet()
+          self.shoot_sound.play()
+
+  def shoot_bullet(self):
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_shoot_time < self.shoot_cooldown:
+          return
+      
+      # Shooting logic
+      if not self.is_shooting:
+          bullet_x = self.pos[0] + 40
+          bullet_y = self.pos[1] + 25
+          new_bullet = CharacterAnimation(self.bullet_path, [4], [50], [100], 60, self.unwanted_colors, [bullet_x, bullet_y], scale=1)
+          new_bullet.set_action(0)
+          self.bullets.append(new_bullet)
+          self.is_shooting = True
+          self.shooting_timer = pygame.time.get_ticks()
+          self.last_shoot_time = current_time
+
+health_bar = HealthBar()
+stamina_bar = StaminaBar()
+finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
 scene = Scenes()
-game = Stage1_Gameplay(scene)
 running = True
 clock = pygame.time.Clock()
 
 while running:
-    clock.tick(game.FPS)
-    scene.emptyBg(10)
-    scene.level1(10, True, 2)
-    game.update()
-    game.draw(screen)
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        scene.finnSR.get_input(event)
-        game.handle_input(event)
-        scene.dialogue.handle_input(event)
-        scene.inventory.handle_click(event)
-        
-    pygame.display.update()
+  clock.tick(FPS)
+  scene.emptyBg(10)
+  scene.level1(10, True, 2)
+  finn.update()
+  finn.draw(screen)
+
+  # Handle events and update the mouse position
+  for event in pygame.event.get():
+      if event.type == pygame.QUIT:
+          running = False
+      finn.handle_input(event)
+      scene.finnSR.get_input(event)
+      scene.finnSR.draw()
+      scene.dialogue.handle_input(event)
+      scene.inventory.handle_click(event)
+
+  pygame.display.update()
 
 pygame.quit()
