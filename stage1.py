@@ -61,14 +61,20 @@ class Score():
 class LeaderBoard():
   def __init__(self):
     self.scores = []
+    self.accepting_username = False
+    self.done_accepting_username = False
+    self.username = ""
 
     path = Path("assets") / "ui_elements" / "leaderboard.png"
     img = pygame.image.load(path)
     self.img = resizeObject(img, 5)
 
+    path = Path("assets") / "ui_elements" / "box.png"
+    img = pygame.image.load(path)
+    self.input_img = resizeObject(img, 7)
+
     self.load_file()
     self.sort()
-    self.draw()
 
   def load_file(self):
     try:
@@ -83,18 +89,53 @@ class LeaderBoard():
       print("File not found")
   
   def sort(self):
-     n = len(self.scores)
-     for i in range(n):
-        for j in range(0, n- i - 1):
-          if float(self.scores[j].time) > float(self.scores[j+1].time):
-            self.scores[j], self.scores[j + 1] = self.scores[j + 1], self.scores[j]
+    n = len(self.scores)
+    for i in range(n):
+      for j in range(0, n- i - 1):
+        if float(self.scores[j].time) > float(self.scores[j+1].time):
+          self.scores[j], self.scores[j + 1] = self.scores[j + 1], self.scores[j]
             
+  
+  def get_username(self):
+    if not self.done_accepting_username:
+      get_username_font =  large_font.render("Username", True, (211, 211, 211))
+      currently_typing = large_font.render(self.username, True, brown)
+      screen.blit(self.input_img, (335,280))
+      self.accepting_username = True
 
-  def draw(self):
+      if (len(self.username) == 0):
+        screen.blit(get_username_font, (405, 350))
+
+      else:
+        screen.blit(currently_typing, (405, 350))
+
+
+
+
+  def get_input(self, event):
+    if self.accepting_username == False:
+      return
+    
+    if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_BACKSPACE:
+        self.username = self.username[:-1]
+
+      elif event.key == pygame.K_RETURN:
+        print(self.username)
+        self.accepting_username = False
+        self.done_accepting_username = True
+      
+      elif event.unicode.isalnum():
+        self.username += event.unicode
+     
+  def save_score(self, time):
+    with open("leaderboard.txt", "a") as file:
+      file.write(f"\n{self.username},{time}")
+
+  def show_leaderboard(self):
     font = large_font.render("Leaderboard", True, brown)
     screen.blit(self.img, (380, 58))
     screen.blit(font, (474,110))
-    print(font.get_size())
 
     for score in range(len(self.scores)):
       place = str(score + 1) + "."
@@ -581,6 +622,7 @@ class Scenes():
     self.inventory.handle_hover()
     self.finnSR.draw()    #DELETE LTR
     self.potion.pick_up_potion(self.finnSR)
+    self.mushroom.killed(self.finnSR)
 
     script = [{"speaker" : "Ice King", "line" : "Helllo"},
               {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -707,6 +749,7 @@ class Fence(pygame.sprite.Sprite):
   def check_collision(self, fin_rect):
         return self.rect.colliderect(fin_rect)
   
+  
 class Mushroom(pygame.sprite.Sprite):
   def __init__(self, y):
     super().__init__()
@@ -752,6 +795,7 @@ class Mushroom(pygame.sprite.Sprite):
 
   #def handle_collision(self):
      
+
 class Mouse(pygame.sprite.Sprite):
   def __init__(self):
     super().__init__()
@@ -806,6 +850,8 @@ class MushroomManager:
       if mushroom.x < -100:
          mushroom.kill()
       
+
+
 
 class FenceManager:
   def __init__(self, scroll_speed):
@@ -1001,5 +1047,6 @@ while running:
       scene.inventory.handle_click(event)
 
   pygame.display.update()
+
 
 pygame.quit()
