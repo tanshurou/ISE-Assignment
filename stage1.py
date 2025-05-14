@@ -842,13 +842,13 @@ class FenceManager:
 class Bullet(pygame.sprite.Sprite):
   def __init__(self, x, y, image_path, speed, unwanted_colors):
       super().__init__()
-      self.bullet_animation = CharacterAnimation(image_path, [4], [52], [100], 60, unwanted_colors, [x, y], scale=1)
+      self.bullet_animation = CharacterAnimation(image_path, [4], [52], [50], 60, unwanted_colors, [x, y], scale=1)
       self.rect = self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame].get_rect(topleft=(x, y))
       self.speed = speed
       self.x = x
       self.y = y
       self.last_update_time = pygame.time.get_ticks()
-      self.animation_cooldown = 100  # Set the time between animation frames
+      self.animation_cooldown = 100
 
   def update(self):
       self.x += self.speed
@@ -862,6 +862,7 @@ class Bullet(pygame.sprite.Sprite):
 
   def draw(self, screen):
       screen.blit(self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame], self.rect.topleft)
+      pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
 
 class Finn(pygame.sprite.Sprite):
   def __init__(self, x, y, health_bar, stamina_bar):
@@ -873,7 +874,7 @@ class Finn(pygame.sprite.Sprite):
       self.unwanted_colors = [(0, 162, 232)]
       self.finn = CharacterAnimation(self.finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, self.unwanted_colors, [x, y], scale=1.2)
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
-      self.rect = self.image.get_rect(topleft=(x, y))
+      self.rect = pygame.Rect(self.pos[0], self.pos[1], 10, 10)
 
       # Jumping setup
       self.is_jumping = False
@@ -907,7 +908,8 @@ class Finn(pygame.sprite.Sprite):
   def update(self):
       self.finn.update()
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
-      self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
+      print(self.finn.animation_list[0][0].get_size())
+      self.rect = pygame.Rect(self.pos[0], self.pos[1], 79, 75)
 
       # Handle jumping
       if self.is_jumping:
@@ -936,6 +938,7 @@ class Finn(pygame.sprite.Sprite):
 
   def draw(self, screen):
       screen.blit(self.image, self.rect.topleft)
+      pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
       for bullet in self.bullets:
           bullet.draw(screen)
 
