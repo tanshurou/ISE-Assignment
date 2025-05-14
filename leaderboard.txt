@@ -3,8 +3,5 @@ name2,2.23
 name3,0.01
 name3,0.01
 name3,0.01
-name3,0.01
-name3,4.01
-name3,0.01
-name3,0.01
-name3,0.01
+hello,3.2
+test,3.2
