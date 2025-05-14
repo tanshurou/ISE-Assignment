@@ -11,7 +11,7 @@ class CharacterAnimation:
         self.scale = scale
         self.cooldown = cooldown
         self.unwanted_colors = unwanted_colors
-        self.pos = list(pos)  # x, y
+        self.pos = list(pos)
         self.frame = 0
         self.action = 0
         self.last_update = pygame.time.get_ticks()
