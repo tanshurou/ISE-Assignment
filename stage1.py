@@ -839,19 +839,39 @@ class FenceManager:
     self.fence_group.draw(screen) 
 
 
+class Bullet(pygame.sprite.Sprite):
+  def __init__(self, x, y, image_path, speed, unwanted_colors):
+      super().__init__()
+      self.bullet_animation = CharacterAnimation(image_path, [4], [52], [100], 60, unwanted_colors, [x, y], scale=1)
+      self.rect = self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame].get_rect(topleft=(x, y))
+      self.speed = speed
+      self.x = x
+      self.y = y
+      self.last_update_time = pygame.time.get_ticks()
+      self.animation_cooldown = 100  # Set the time between animation frames
+
+  def update(self):
+      self.x += self.speed
+      self.rect.x = self.x
+
+      # Handle animation updates
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_update_time > self.animation_cooldown:
+          self.bullet_animation.update()  # Update the bullet's animation frame
+          self.last_update_time = current_time
+
+  def draw(self, screen):
+      screen.blit(self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame], self.rect.topleft)
+
 class Finn(pygame.sprite.Sprite):
   def __init__(self, x, y, health_bar, stamina_bar):
       super().__init__()
-
-      # Positioning and movement
       self.pos = [x, y]
-
+      
       # Animation setup
       self.finn_path = Path("assets") / "character" / "Finn_Running.png"
       self.unwanted_colors = [(0, 162, 232)]
       self.finn = CharacterAnimation(self.finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, self.unwanted_colors, [x, y], scale=1.2)
-
-      # Set the image and rect for the sprite
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
       self.rect = self.image.get_rect(topleft=(x, y))
 
@@ -861,21 +881,13 @@ class Finn(pygame.sprite.Sprite):
       self.gravity = 0.6
       self.finn_y_velocity = 0
 
-      # Load jump sound effect
+      # Load sound effects
       self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
       self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
 
-      # Shooting control
-      self.last_shoot_time = 0
-      self.shoot_cooldown = 1000
-
       # Bullet control
-      self.is_shooting = False
-      self.shooting_timer = 0
-      self.bullets = []
+      self.bullets = pygame.sprite.Group()
       self.BULLET_SPEED = 6
-      self.bullet_explosion = False
-      self.explosion_timer = 0
       self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
 
       # Lane control
@@ -888,11 +900,14 @@ class Finn(pygame.sprite.Sprite):
       self.health_bar = health_bar
       self.stamina_bar = stamina_bar
 
+      # Bullet control
+      self.last_shoot_time = 0
+      self.shoot_cooldown = 1000
+
   def update(self):
       self.finn.update()
-      # Update the image and rect for the sprite
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
-      self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))  # Update rect with new position
+      self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
 
       # Handle jumping
       if self.is_jumping:
@@ -903,7 +918,7 @@ class Finn(pygame.sprite.Sprite):
               self.is_jumping = False
               self.finn.set_action(0)
 
-      # Smooth lane Changing
+      # Smooth lane changing
       if abs(self.pos[1] - self.lane_target_y) > 1:
           if self.pos[1] < self.lane_target_y:
               self.pos[1] += 5
@@ -912,22 +927,15 @@ class Finn(pygame.sprite.Sprite):
       else:
           self.pos[1] = self.lane_target_y
 
-      # Bullet movement
-      for bullet in self.bullets[:]:
-          bullet.pos[0] += self.BULLET_SPEED
+      # Update bullet movement
+      for bullet in self.bullets:
           bullet.update()
-
-      if self.bullet_explosion and pygame.time.get_ticks() - self.explosion_timer > 800:
-          self.bullet_explosion = False
-
-      if self.is_shooting:
-          if pygame.time.get_ticks() - self.shooting_timer > 200:
-              self.finn.set_action(0)
-              self.is_shooting = False
+          # If the bullet goes off-screen, remove it
+          if bullet.rect.x > SCREEN_WIDTH:
+              bullet.kill()
 
   def draw(self, screen):
       screen.blit(self.image, self.rect.topleft)
-      pygame.draw.rect(screen, (255,0,0), self.rect, 3) 
       for bullet in self.bullets:
           bullet.draw(screen)
 
@@ -949,25 +957,19 @@ class Finn(pygame.sprite.Sprite):
               self.jump_sound.play()
 
       if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-          self.finn.set_action(2)
-          self.shoot_bullet()
-          self.shoot_sound.play()
+          current_time = pygame.time.get_ticks()
+          if current_time - self.last_shoot_time >= self.shoot_cooldown:
+              self.finn.set_action(2)
+              self.shoot_bullet()
+              self.shoot_sound.play()
+              self.last_shoot_time = current_time
 
   def shoot_bullet(self):
-      current_time = pygame.time.get_ticks()
-      if current_time - self.last_shoot_time < self.shoot_cooldown:
-          return
-      
-      # Shooting logic
-      if not self.is_shooting:
-          bullet_x = self.pos[0] + 40
-          bullet_y = self.pos[1] + 25
-          new_bullet = CharacterAnimation(self.bullet_path, [4], [50], [100], 60, self.unwanted_colors, [bullet_x, bullet_y], scale=1)
-          new_bullet.set_action(0)
-          self.bullets.append(new_bullet)
-          self.is_shooting = True
-          self.shooting_timer = pygame.time.get_ticks()
-          self.last_shoot_time = current_time
+      bullet_x = self.pos[0] + 40
+      bullet_y = self.pos[1] + 25
+      new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors)
+      self.bullets.add(new_bullet)
+
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
@@ -975,6 +977,8 @@ finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
 scene = Scenes()
 running = True
 clock = pygame.time.Clock()
+running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+running_sound.play()
 
 while running:
   clock.tick(FPS)
