@@ -1,8 +1,9 @@
 import pygame
 import spritesheet
 
-class CharacterAnimation:
+class CharacterAnimation(pygame.sprite.Sprite):
     def __init__(self, image_path, animation_steps, frame_heights, frame_widths, cooldown, unwanted_colors, pos, scale):
+        super().__init__()
         sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
         self.sprite_sheet = spritesheet.SpriteSheet(sprite_sheet_image)
         self.animation_list = []
@@ -16,6 +17,7 @@ class CharacterAnimation:
         self.action = 0
         self.last_update = pygame.time.get_ticks()
         self.visible = True
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], 30, 30)
 
         self.load_frames(animation_steps)
 
@@ -63,3 +65,7 @@ class CharacterAnimation:
     def move(self, dx=0, dy=0):
         self.pos[0] += dx
         self.pos[1] += dy
+
+
+    def handle_input(self, event):
+        print("hello")
