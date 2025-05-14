@@ -582,15 +582,15 @@ class Scenes():
     self.finnSR.draw()    #DELETE LTR
     self.potion.pick_up_potion(self.finnSR)
 
-    # script = [{"speaker" : "Ice King", "line" : "Helllo"},
-    #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
-    #           {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
-    #           {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
-    #           {"speaker" : "Finn", "line" : "Helloooo"},
-    #           {"speaker" : "Finn", "line" : "My name is Finn!"},
-    #           {"speaker" : "Jake", "line" : "Helloooo"},
-    #           {"speaker" : "Jake", "line" : "My name is Jake!"}]
-    # self.dialogue.draw(script)
+    script = [{"speaker" : "Ice King", "line" : "Helllo"},
+              {"speaker" : "Ice King", "line" : "My name is Ice King"},
+              {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
+              {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
+              {"speaker" : "Finn", "line" : "Helloooo"},
+              {"speaker" : "Finn", "line" : "My name is Finn!"},
+              {"speaker" : "Jake", "line" : "Helloooo"},
+              {"speaker" : "Jake", "line" : "My name is Jake!"}]
+    self.dialogue.draw(script)
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
