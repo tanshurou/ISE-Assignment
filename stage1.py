@@ -889,8 +889,7 @@ class Finn(pygame.sprite.Sprite):
       self.stamina_bar = stamina_bar
 
   def update(self):
-      self.finn.update()  # Update the animation
-
+      self.finn.update()
       # Update the image and rect for the sprite
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
       self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))  # Update rect with new position
