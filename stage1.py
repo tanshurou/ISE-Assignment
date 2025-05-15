@@ -796,142 +796,157 @@ class FenceManager:
     self.fence_group.draw(screen) 
 
 class SpriteSheet():
-  def __init__(self, image):
-      self.sheet = image
+    def __init__(self, image):
+        self.sheet = image
 
-  def get_image(self, frame_x, frame_width, frame_height, scale, colours):
-      img = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
-      img.blit(self.sheet, (0, 0), (frame_x * frame_width, 0, frame_width, frame_height))
-      img = pygame.transform.scale(img, (int(frame_width * scale), int(frame_height * scale)))
-      for x in range(img.get_width()):
-          for y in range(img.get_height()):
-              if img.get_at((x, y))[:3] in colours:
-                  img.set_at((x, y), (0, 0, 0, 0))
-      return img
+    def get_image(self, frame_x, frame_width, frame_height, scale, colours):
+        img = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
+        img.blit(self.sheet, (0, 0), (frame_x * frame_width, 0, frame_width, frame_height))
+        img = pygame.transform.scale(img, (int(frame_width * scale), int(frame_height * scale)))
+
+        for x in range(img.get_width()):
+            for y in range(img.get_height()):
+                if img.get_at((x, y))[:3] in colours:
+                    img.set_at((x, y), (0, 0, 0, 0))
+        return img
+
 
 class Finn(pygame.sprite.Sprite):
-    def __init__(self, x, y, health_bar, stamina_bar, scale=1.2):
-        super().__init__()
-        # Finn Setup
-        self.scale = scale
-        self.finn_path = Path("assets") / "character" / "Finn_Running.png"
-        self.unwanted_colors = [(0, 162, 232)]
-        self.sprite_sheet_image = pygame.image.load(self.finn_path).convert_alpha()
-        self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
-        self.animation_list = []
-        self.frame_width = 88
-        self.frame_height = 66
-        self.cooldown = 100
-        self.frame = 0
-        self.finn_action = 0
-        self.last_update = pygame.time.get_ticks() - self.cooldown - 1
-        self.load_frames([10, 10, 8])
-        self.image = self.animation_list[self.finn_action][self.frame]
-        self.rect = self.image.get_rect(topleft=(x, y))
-        self.pos = [x, y]
+  def __init__(self, x, y, health_bar, stamina_bar, scale=1.2):
+    super().__init__()
+    # Finn Setup
+    self.scale = scale
+    self.finn_path = Path("assets") / "character" / "Finn_Running.png"
+    self.unwanted_colors = [(0, 162, 232)]
+    self.sprite_sheet_image = pygame.image.load(self.finn_path).convert_alpha()
+    self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
+    self.animation_list = []
+    self.frame_width = [66, 75.3, 83.5]
+    self.frame_height = [88, 88, 88]
+    self.cooldown = 100
+    self.frame = 0
+    self.finn_action = 0
+    self.last_update = pygame.time.get_ticks() - self.cooldown - 1
+    self.load_frames([10, 10, 8])
+    self.image = self.animation_list[self.finn_action][self.frame]
+    self.rect = self.image.get_rect(topleft=(x, y))
+    self.pos = [x, y]
 
-        # Finn Jumping Mechanic
+    # Finn Jumping Mechanic
+    self.is_jumping = False
+    self.jump_velocity = -10 * self.scale
+    self.gravity = 0.5 * self.scale
+    self.finn_y_velocity = 0
+
+    # Audio for Finn
+    self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
+    self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
+
+    # Bullet Setup
+    self.bullet_group = pygame.sprite.Group()
+    self.BULLET_SPEED = int(7 * self.scale) 
+    self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
+
+    # Lane Setup
+    self.lanes = [220, 310, 410]
+    self.current_lane = 1
+    self.lane_target_y = self.lanes[self.current_lane]
+
+    # Health bar and stamina bar setup
+    self.speed = 5 * self.scale
+    self.health_bar = health_bar
+    self.stamina_bar = stamina_bar
+    self.last_shoot_time = 0
+    self.shoot_cooldown = 1500
+    self.set_finn_action(0)
+
+  def load_frames(self, animation_steps):
+    step_counter = 0
+    for i, steps in enumerate(animation_steps):
+        temp_list = []
+        for _ in range(steps):
+            img = self.sprite_sheet.get_image(step_counter, self.frame_width[i],  self.frame_height[i], self.scale, self.unwanted_colors)
+            temp_list.append(img)
+            step_counter += 1
+        self.animation_list.append(temp_list)
+
+
+  def update(self):
+    now = pygame.time.get_ticks()
+    if now - self.last_update >= self.cooldown:
+        self.frame = (self.frame + 1) % len(self.animation_list[self.finn_action])
+        self.last_update = now
+        if self.frame == 0 and self.finn_action != 0:
+            self.set_finn_action(0)
+
+    self.image = self.animation_list[self.finn_action][self.frame]
+    self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
+
+    # Jumping Mechanics
+    if not self.is_jumping:
+        if self.pos[1] < self.lane_target_y:
+            self.pos[1] += self.speed
+            if self.pos[1] > self.lane_target_y:
+                self.pos[1] = self.lane_target_y
+        elif self.pos[1] > self.lane_target_y:
+            self.pos[1] -= self.speed
+            if self.pos[1] < self.lane_target_y:
+                self.pos[1] = self.lane_target_y
+    
+    if self.is_jumping:
+        self.finn_y_velocity += self.gravity
+        self.pos[1] += self.finn_y_velocity
+
+    if self.is_jumping and self.pos[1] >= self.lane_target_y - 2:
+        self.pos[1] = self.lane_target_y
         self.is_jumping = False
-        self.jump_velocity = -15 * self.scale
-        self.gravity = 0.6 * self.scale
         self.finn_y_velocity = 0
-
-        # Audio for Finn
-        self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
-        self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
-
-        # Bullet Setup
-        self.bullet_group = pygame.sprite.Group()
-        self.BULLET_SPEED = int(5 * self.scale) 
-        self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
-
-        # Lane Setup
-        self.lanes = [220, 310, 410]
-        self.current_lane = 1
-        self.lane_target_y = self.lanes[self.current_lane]
-
-        # Health bar and stamina bar setup
-        self.speed = 5 * self.scale
-        self.health_bar = health_bar
-        self.stamina_bar = stamina_bar
-        self.last_shoot_time = 0
-        self.shoot_cooldown = 1500
         self.set_finn_action(0)
 
-    def load_frames(self, animation_steps):
-        step_counter = 0
-        for steps in animation_steps:
-            temp_list = []
-            for _ in range(steps):
-                img = self.sprite_sheet.get_image(step_counter, 66, 88, self.scale, self.unwanted_colors)
-                temp_list.append(img)
-                step_counter += 1
-            self.animation_list.append(temp_list)
+    for bullet in list(self.bullet_group):
+        bullet.update()
+        if bullet.rect.x > 2000:
+            self.bullet_group.remove(bullet)
 
-    def update(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_update >= self.cooldown:
-            self.frame = (self.frame + 1) % len(self.animation_list[self.finn_action])
-            self.last_update = now
-            if self.frame == 0 and self.finn_action != 0:
-                self.set_finn_action(0)
+  def draw(self, screen):
+    screen.blit(self.image, self.rect.topleft)
+    pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+    for bullet in self.bullet_group:
+        bullet.draw(screen)
 
-        self.image = self.animation_list[self.finn_action][self.frame]
-        self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
+  def handle_input(self, event):
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_w and self.current_lane > 0:
+            self.current_lane -= 1
+            self.lane_target_y = self.lanes[self.current_lane]
+        elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
+            self.current_lane += 1
+            self.lane_target_y = self.lanes[self.current_lane]
+        elif event.key == pygame.K_SPACE and not self.is_jumping:
+            self.is_jumping = True
+            self.finn_y_velocity = self.jump_velocity
+            self.set_finn_action(1)
+            self.jump_sound.play()
 
-        if self.is_jumping:
-            self.finn_y_velocity += self.gravity
-            self.pos[1] += self.finn_y_velocity
-            if self.pos[1] >= self.lanes[self.current_lane]:
-                self.pos[1] = self.lanes[self.current_lane]
-                self.is_jumping = False
-                self.set_finn_action(0)
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shoot_time >= self.shoot_cooldown:
+            self.set_finn_action(2)
+            self.shoot_bullet()
+            self.shoot_sound.play()
+            self.last_shoot_time = current_time
 
-        for bullet in list(self.bullet_group):
-            bullet.update()
-            if bullet.rect.x > 2000:
-                self.bullet_group.remove(bullet)
+  def set_finn_action(self, action_index):
+    if action_index < len(self.animation_list):
+        self.finn_action = action_index
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks() - self.cooldown - 1
 
-    def draw(self, screen):
-        screen.blit(self.image, self.rect.topleft)
-        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
-        for bullet in self.bullet_group:
-            bullet.draw(screen)
-
-    def handle_input(self, event):
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w and self.current_lane > 0:
-                self.current_lane -= 1
-                self.lane_target_y = self.lanes[self.current_lane]
-            elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
-                self.current_lane += 1
-                self.lane_target_y = self.lanes[self.current_lane]
-            elif event.key == pygame.K_SPACE and not self.is_jumping:
-                self.is_jumping = True
-                self.finn_y_velocity = self.jump_velocity
-                self.set_finn_action(1)
-                self.jump_sound.play()
-
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            current_time = pygame.time.get_ticks()
-            if current_time - self.last_shoot_time >= self.shoot_cooldown:
-                self.set_finn_action(2)
-                self.shoot_bullet()
-                self.shoot_sound.play()
-                self.last_shoot_time = current_time
-
-    def set_finn_action(self, action_index):
-        if action_index < len(self.animation_list):
-            self.finn_action = action_index
-            self.frame = 0
-            self.last_update = pygame.time.get_ticks() - self.cooldown - 1
-
-    def shoot_bullet(self):
-        bullet_x = self.pos[0] + int(40 * self.scale)
-        bullet_y = self.pos[1] + int(25 * self.scale)
-        new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
-        self.bullet_group.add(new_bullet)
-
+  def shoot_bullet(self):
+    bullet_x = self.pos[0] + int(40 * self.scale)
+    bullet_y = self.pos[1] + int(25 * self.scale)
+    new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
+    self.bullet_group.add(new_bullet)
 
 class Bullet(pygame.sprite.Sprite):
   def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5):
@@ -967,21 +982,13 @@ class Bullet(pygame.sprite.Sprite):
       for steps in animation_steps:
           temp_list = []
           for _ in range(steps):
-              img = self.get_image(step_counter)
-              img.set_colorkey(self.unwanted_colors[0])
+              img = self.sprite_sheet.get_image(
+                  frame_x=step_counter, frame_width=self.frame_width,
+                  frame_height=self.frame_height, scale=self.scale, colours=self.unwanted_colors
+              )
               temp_list.append(img)
               step_counter += 1
           self.animation_list.append(temp_list)
-
-  def get_image(self, frame_x):
-      raw_img = pygame.Surface((self.frame_width, self.frame_height), pygame.SRCALPHA)
-      raw_img.blit(self.sprite_sheet.sheet, (0, 0), (frame_x * 50, 0, 50, 52))
-      raw_img = pygame.transform.scale(raw_img, (int(50 * self.scale), int(52 * self.scale)))
-      for x in range(raw_img.get_width()):
-          for y in range(raw_img.get_height()):
-              if raw_img.get_at((x, y))[:3] in self.unwanted_colors:
-                  raw_img.set_at((x, y), (0, 0, 0, 0))
-      return raw_img
 
   def update(self):
       self.rect.x += self.speed
