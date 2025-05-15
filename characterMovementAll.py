@@ -67,5 +67,3 @@ class CharacterAnimation(pygame.sprite.Sprite):
         self.pos[1] += dy
 
 
-    def handle_input(self, event):
-        print("hello")

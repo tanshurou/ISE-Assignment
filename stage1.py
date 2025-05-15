@@ -555,14 +555,14 @@ class Scenes():
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.dialogue = DialogueBox()
-    self.effects = EffectManager
+    self.effects = EffectManager()
 
-    self.finnSR = Mouse()
+    self.mouse = Mouse()
     self.finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
 
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
-    self.mushroom = MushroomManager(None, None)  # Temporarily pass None
+    self.mushroom = MushroomManager(self.effects, None, None)  # Temporarily pass None
     self.potion = PotionManager(None, None, self.inventory)  # Temporarily pass None
 
     # Step 2: After all objects are created, set their group references
@@ -607,9 +607,7 @@ class Scenes():
     screen.blit(chara_frame, (55, 45))
 
     #finn potrait
-    finn_potrait_path = Path("assets") / "character" / "Finn Potrait.PNG"
-    finn_img = Image.open(finn_potrait_path)
-    finn_img.save(finn_potrait_path, icc_profile = None)
+    finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
     finn_img = pygame.image.load(finn_potrait_path)
     finn_img = resizeObject(finn_img, 0.4)
     screen.blit(finn_img, (61, 60))
@@ -622,11 +620,13 @@ class Scenes():
       self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
     self.potion.update(speed)
     self.inventory.handle_hover()
-    self.finnSR.draw()    #DELETE LTR
-    self.potion.pick_up_potion(self.finnSR)
+    self.mouse.draw()    #DELETE LTR
+    self.potion.pick_up_potion(self.mouse)
     self.finn.update
     self.finn.draw(screen)
-    self.mushroom.killed(self.finn)
+    #self.mushroom.hit(self.mouse)
+    self.mushroom.collide(self.mouse)
+    self.effects.apply_effects()
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -748,7 +748,7 @@ class Fence(pygame.sprite.Sprite):
   
   
 class Mushroom(pygame.sprite.Sprite):
-  def __init__(self, y):
+  def __init__(self, y, effect_manager):
     super().__init__()
     self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
     self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
@@ -760,12 +760,19 @@ class Mushroom(pygame.sprite.Sprite):
     self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
     self.animation_frames = [7,9,4]
     self.animation_list = []
-    self.animation_index = [0,0,0]
+    self.animation_index = [0,0,0,0,0]
     self.explode_animation = []
+    self.poison_animation = []
     self.last_update_time = 0
+    self.explode_animation_last_update_time = 0
+    self.collide_animation_update_time = 0
     self.x = 1300
     self.y = y
     self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+    self.dead = False
+    self.collide = False
+    self.health = 2
+    self.special_effect = effect_manager
 
     for animation in range(len(spritesheets)):
       placeholder = []
@@ -776,11 +783,21 @@ class Mushroom(pygame.sprite.Sprite):
       self.animation_list.append(placeholder)
 
     explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
+    poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
     explode_img = pygame.image.load(explode_path)
+    poison_img = pygame.image.load(poison_path)
+
     for frame in range(14):
-      img = getImage(explode_img, frame, 64, 64, 1)
+      img = getImage(explode_img, frame, 64, 64, 2.5)
+      img2 = getImage(poison_img, frame, 64, 64, 2.5)
       self.explode_animation.append(img)
-      screen.blit(img, (200,200))
+      self.poison_animation.append(img2)
+
+  def take_damage(self):
+     self.health -= 1
+     print(self.health)
+     if self.health <= 0:
+        self.dead = True
 
   def animation(self, speed, action):
       self.x -= speed
@@ -795,10 +812,34 @@ class Mushroom(pygame.sprite.Sprite):
       
       self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
 
-      screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
-      pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
+      if self.dead == False and self.collide == False:
+        screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
+        pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
 
-#  def die(self):
+  def die(self):
+    cooldown = 100
+    current_time = pygame.time.get_ticks()
+    self.dead = True
+
+    if current_time - self.explode_animation_last_update_time > cooldown:
+       self.animation_index[3] += 1
+       self.explode_animation_last_update_time = current_time
+       if self.animation_index[3] == 13:
+        self.kill()
+    screen.blit(self.explode_animation[self.animation_index[3]], (self.x-20, self.y-30))
+
+  def poison(self):
+    cooldown = 100
+    current_time = pygame.time.get_ticks()
+    self.collide = True
+
+    if current_time - self.collide_animation_update_time > cooldown:
+      self.animation_index[4] += 1
+      self.collide_animation_update_time = current_time
+      if self.animation_index[4] == 13:
+        self.special_effect.trigger_effect(0)
+        self.kill()
+    screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
      
 
      
@@ -824,7 +865,7 @@ class Mouse(pygame.sprite.Sprite):
     screen.blit(self.img, (self.x, self.y))
     
 class MushroomManager:
-  def __init__(self, fence_group=None, potion_group=None):
+  def __init__(self, effect_manager, fence_group=None, potion_group=None):
     self.mushroom_group = pygame.sprite.Group()
     self.last_spawned_time = 0
     self.spawn_interval = 3000
@@ -832,9 +873,10 @@ class MushroomManager:
     self.max_mushroom = 2
     self.fence_group = fence_group
     self.potion_group = potion_group
+    self.effect_manager = effect_manager
 
   def spawn(self):
-    new_mushroom = Mushroom(random.choice(self.y_positions))
+    new_mushroom = Mushroom(random.choice(self.y_positions), self.effect_manager)
     return new_mushroom
 
   def update(self, max_mushroom, scroll_speed):
@@ -854,14 +896,22 @@ class MushroomManager:
 
     for mushroom in self.mushroom_group:
       mushroom.animation(scroll_speed, 0)
+      if mushroom.dead == True:
+         mushroom.die()
+      if mushroom.collide == True:
+         mushroom.poison()
       if mushroom.x < -100:
          mushroom.kill()
 
-  def killed(self, finn):
+  def hit(self, bullet):
+    for mushroom in self.mushroom_group:
+      if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(bullet), True):
+        mushroom.take_damage()
+
+  def collide(self, finn):
     for mushroom in self.mushroom_group:
       if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), True):
-         mushroom.kill()
-         print("kill")
+        mushroom.collide = True
   
 
       
@@ -1037,51 +1087,61 @@ class Finn(pygame.sprite.Sprite):
 
 class EffectManager():
   def __init__(self):
-    self.active_effects = {
-       "poison" : 0
-    }
-    self.effect_duration = {
-      "poison" : 3000
-    } 
+      self.start_time = [0]
+      self.effect_duration = [3000]
+      self.last_updated_time = [0]
+      self.effect_applied = [0]
 
   def trigger_effect(self, effect):
-     start_time = pygame.time.get_ticks()
-     self.active_effects[effect] = start_time
-     
-  # def poisoned(self):
-  #   current_time = pygame.time.get_ticks()
+      # Set the effect as active
+      self.effect_applied[0] = 1
+      # IMPORTANT: Update the last updated time when triggering
+      self.last_updated_time[0] = pygame.time.get_ticks()
 
-  #   if current_time - self.active_effects[poison] < self.effect_duration[poison]:
-  #     print("poisoned")
+  def poisoned(self):
+      time_ms = pygame.time.get_ticks()
+      # Get a temporary copy of the current screen
+      temp = screen.copy()
 
-  def poisoned():
-    time_ms = pygame.time.get_ticks()
-    # Get a temporary copy of the current screen
-    temp = screen.copy()
+      # Calculate rotation and scale using sine wave
+      angle = math.sin(time_ms / 200) * 3  # degrees
+      scale = 1 + math.sin(time_ms / 300) * 0.02
 
-    # Calculate rotation and scale using sine wave
-    angle = math.sin(time_ms / 200) * 3  # degrees
-    scale = 1 + math.sin(time_ms / 300) * 0.02
+      # Scale surface
+      new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
+      temp = pygame.transform.smoothscale(temp, new_size)
 
-    # Scale surface
-    new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
-    temp = pygame.transform.smoothscale(temp, new_size)
+      # Rotate surface
+      temp = pygame.transform.rotate(temp, angle)
 
-    # Rotate surface
-    temp = pygame.transform.rotate(temp, angle)
+      # Center it back on screen
+      rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
 
-    # Center it back on screen
-    rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+      # Clear and blit
+      screen.fill((0, 0, 0))
+      screen.blit(temp, rect.topleft)
 
-    # Clear and blit
-    screen.fill((0, 0, 0))
-    screen.blit(temp, rect.topleft)
+      # Optional: add green overlay
+      overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+      overlay.fill((0, 255, 0, 80))
+      screen.blit(overlay, (0, 0))
 
-    # Optional: add green overlay
-    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-    overlay.fill((0, 255, 0, 80))
-    screen.blit(overlay, (0, 0))
-       
+  def apply_effects(self):
+      if self.effect_applied[0] == 1:
+          current_time = pygame.time.get_ticks()
+          elapsed_time = current_time - self.last_updated_time[0]
+          
+          if elapsed_time < self.effect_duration[0]:
+              self.poisoned()
+          else:
+              # Fixed: Use = for assignment, not == for comparison
+              print("Effect duration expired, resetting")
+              self.effect_applied[0] = 0
+              # Fixed: Use = for assignment, not == for comparison
+              # Also, make sure to index the list properly
+              self.last_updated_time[0] = 0
+    
+      
       
   
 
@@ -1107,12 +1167,10 @@ while running:
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
-      scene.finn.handle_input(event)
-      scene.finnSR.get_input(event)
+      scene.mouse.get_input(event)
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
 
-  test = Mushroom(100) 
   pygame.display.update()
 
 
