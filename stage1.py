@@ -278,7 +278,7 @@ class InventoryBar():
     self.currently_hovering_slot = currently_hovering_slot if hovering_any_slot else None
 
   def handle_click(self, event):
-     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
       for slot_index, slot_rect in enumerate(self.slots):
         if slot_rect.collidepoint(pygame.mouse.get_pos()) and self.items[slot_index] != None:
             print("clicked")
@@ -555,6 +555,7 @@ class Scenes():
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.dialogue = DialogueBox()
+    self.effects = EffectManager
 
     self.finnSR = Mouse()
 
@@ -622,29 +623,22 @@ class Scenes():
     self.inventory.handle_hover()
     self.finnSR.draw()    #DELETE LTR
     self.potion.pick_up_potion(self.finnSR)
-    self.mushroom.killed(self.finnSR)
 
-    script = [{"speaker" : "Ice King", "line" : "Helllo"},
-              {"speaker" : "Ice King", "line" : "My name is Ice King"},
-              {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
-              {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
-              {"speaker" : "Finn", "line" : "Helloooo"},
-              {"speaker" : "Finn", "line" : "My name is Finn!"},
-              {"speaker" : "Jake", "line" : "Helloooo"},
-              {"speaker" : "Jake", "line" : "My name is Jake!"}]
-    self.dialogue.draw(script)
+
+    # script = [{"speaker" : "Ice King", "line" : "Helllo"},
+    #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
+    #           {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
+    #           {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
+    #           {"speaker" : "Finn", "line" : "Helloooo"},
+    #           {"speaker" : "Finn", "line" : "My name is Finn!"},
+    #           {"speaker" : "Jake", "line" : "Helloooo"},
+    #           {"speaker" : "Jake", "line" : "My name is Jake!"}]
+    # self.dialogue.draw(script)
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
 
-    if key_pressed[pygame.K_UP]:
-      self.health.heal(1)
-    if key_pressed[pygame.K_DOWN]:
-      self.health.takeDamage(1)
-    if key_pressed[pygame.K_LEFT]:
-      self.stamina.decreaseStamina(1)
-    if key_pressed[pygame.K_RIGHT]:
-      self.stamina.increaseStamina(1)
+
 
   def cutscene1(self):
     self.now = pygame.time.get_ticks()
@@ -764,6 +758,7 @@ class Mushroom(pygame.sprite.Sprite):
     self.animation_frames = [7,9,4]
     self.animation_list = []
     self.animation_index = [0,0,0]
+    self.explode_animation = []
     self.last_update_time = 0
     self.x = 1300
     self.y = y
@@ -776,6 +771,13 @@ class Mushroom(pygame.sprite.Sprite):
         placeholder.append(img)
         #screen.blit(img, (200,200))
       self.animation_list.append(placeholder)
+
+    explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
+    explode_img = pygame.image.load(explode_path)
+    for frame in range(14):
+      img = getImage(explode_img, frame, 64, 64, 1)
+      self.explode_animation.append(img)
+      screen.blit(img, (200,200))
 
   def animation(self, speed, action):
       self.x -= speed
@@ -793,7 +795,9 @@ class Mushroom(pygame.sprite.Sprite):
       screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
       pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
 
-  #def handle_collision(self):
+#  def die(self):
+     
+
      
 
 class Mouse(pygame.sprite.Sprite):
@@ -849,6 +853,8 @@ class MushroomManager:
       mushroom.animation(scroll_speed, 0)
       if mushroom.x < -100:
          mushroom.kill()
+
+
       
 
 
@@ -1019,6 +1025,56 @@ class Finn(pygame.sprite.Sprite):
       new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors)
       self.bullets.add(new_bullet)
 
+class EffectManager():
+  def __init__(self):
+    self.active_effects = {
+       "poison" : 0
+    }
+    self.effect_duration = {
+      "poison" : 3000
+    } 
+
+  def trigger_effect(self, effect):
+     start_time = pygame.time.get_ticks()
+     self.active_effects[effect] = start_time
+     
+  # def poisoned(self):
+  #   current_time = pygame.time.get_ticks()
+
+  #   if current_time - self.active_effects[poison] < self.effect_duration[poison]:
+  #     print("poisoned")
+
+  def poisoned():
+    time_ms = pygame.time.get_ticks()
+    # Get a temporary copy of the current screen
+    temp = screen.copy()
+
+    # Calculate rotation and scale using sine wave
+    angle = math.sin(time_ms / 200) * 3  # degrees
+    scale = 1 + math.sin(time_ms / 300) * 0.02
+
+    # Scale surface
+    new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
+    temp = pygame.transform.smoothscale(temp, new_size)
+
+    # Rotate surface
+    temp = pygame.transform.rotate(temp, angle)
+
+    # Center it back on screen
+    rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+
+    # Clear and blit
+    screen.fill((0, 0, 0))
+    screen.blit(temp, rect.topleft)
+
+    # Optional: add green overlay
+    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    overlay.fill((0, 255, 0, 80))
+    screen.blit(overlay, (0, 0))
+       
+      
+  
+
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
@@ -1029,7 +1085,10 @@ clock = pygame.time.Clock()
 running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
 running_sound.play()
 
+
+
 while running:
+  pygame.mouse.set_visible(False)
   clock.tick(FPS)
   scene.emptyBg(10)
   scene.level1(10, True, 2)
@@ -1042,10 +1101,10 @@ while running:
           running = False
       finn.handle_input(event)
       scene.finnSR.get_input(event)
-      scene.finnSR.draw()
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
 
+  test = Mushroom(100) 
   pygame.display.update()
 
 
