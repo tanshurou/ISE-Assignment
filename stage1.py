@@ -558,6 +558,7 @@ class Scenes():
     self.effects = EffectManager
 
     self.finnSR = Mouse()
+    self.finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
 
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -623,8 +624,15 @@ class Scenes():
     self.inventory.handle_hover()
     self.finnSR.draw()    #DELETE LTR
     self.potion.pick_up_potion(self.finnSR)
+<<<<<<< HEAD
 
 
+=======
+    self.finn.update
+    self.finn.draw(screen)
+    self.mushroom.killed(self.finn)
+
+>>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
     #           {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
@@ -854,6 +862,15 @@ class MushroomManager:
       if mushroom.x < -100:
          mushroom.kill()
 
+<<<<<<< HEAD
+=======
+  def killed(self, finn):
+    for mushroom in self.mushroom_group:
+      if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), True):
+         mushroom.kill()
+         print("kill")
+  
+>>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
 
       
 
@@ -927,6 +944,7 @@ class Finn(pygame.sprite.Sprite):
       self.finn = CharacterAnimation(self.finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, self.unwanted_colors, [x, y], scale=1.2)
       self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
       self.rect = pygame.Rect(self.pos[0], self.pos[1], 10, 10)
+      
 
       # Jumping setup
       self.is_jumping = False
@@ -1078,7 +1096,7 @@ class EffectManager():
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
-finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
+
 scene = Scenes()
 running = True
 clock = pygame.time.Clock()
@@ -1086,20 +1104,22 @@ running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Soun
 running_sound.play()
 
 
+<<<<<<< HEAD
 
+=======
+#start
+>>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
 while running:
   pygame.mouse.set_visible(False)
   clock.tick(FPS)
   scene.emptyBg(10)
   scene.level1(10, True, 2)
-  finn.update()
-  finn.draw(screen)
 
   # Handle events and update the mouse position
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
-      finn.handle_input(event)
+      scene.finn.handle_input(event)
       scene.finnSR.get_input(event)
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
