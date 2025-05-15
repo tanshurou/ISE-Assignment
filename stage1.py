@@ -986,7 +986,6 @@ class Bullet(pygame.sprite.Sprite):
   def update(self):
       self.rect.x += self.speed
       self.update_collision_rect()
-      
       now = pygame.time.get_ticks()
       if now - self.last_update >= self.cooldown:
           self.frame = (self.frame + 1) % len(self.animation_list[self.action])
