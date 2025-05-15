@@ -569,25 +569,6 @@ class Scenes():
     self.mushroom.potion_group = self.potion.potion_group
     self.potion.mushroom_group = self.mushroom.mushroom_group
     self.potion.fence_group = self.fence.fence_group
-    
-    # Wallace
-    Blue = (0, 162, 232)
-    unwanted_colors = [Blue]
-    self.cutscene_state = 0
-    self.cutscene_start_time = pygame.time.get_ticks()
-    self.special_effect_visible = False
-    self.gameplay_started = False
-
-    finn_path = Path("assets") / "character" / "Finn_Running.png"
-    pb_path = Path("assets") / "character" / "Princess_Bubblegum.png"
-    ice_king_path = Path("assets") / "character" / "Ice_King.png"
-    special_effect_path = Path("assets") / "character" / "Special_effect.png"
-
-    self.finn = CharacterAnimation(finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, unwanted_colors, [100, 350], scale=1.2)
-    self.pb = CharacterAnimation(pb_path, [8, 8, 5], [52, 52, 63.8], [120, 120, 120], 60, unwanted_colors, [170, 350], scale=0.7)
-    self.ice_king = CharacterAnimation(ice_king_path, [6, 6, 6], [114, 141, 131], [150, 150, 150], 60, unwanted_colors, [1500, 250], scale= 0.9)
-    self.ice_king_velocity = [-4, 0]
-    self.special_effect = CharacterAnimation(special_effect_path, [4, 5], [50, 100], [100, 100], 60, unwanted_colors, [100,250], scale=1)
 
   def emptyBg(self, speed):
     self.scroll_speed = speed
@@ -648,89 +629,6 @@ class Scenes():
       self.stamina.decreaseStamina(1)
     if key_pressed[pygame.K_RIGHT]:
       self.stamina.increaseStamina(1)
-
-  def cutscene1(self):
-    self.now = pygame.time.get_ticks()
-    if self.cutscene_state == 0:
-        if self.finn.action != 0:
-            self.finn.set_action(0)
-        self.finn.move(dx=1)
-
-        if self.pb.action != 0:
-            self.pb.set_action(0)
-        self.pb.move(dx=1)
-
-        if self.finn.pos[0] >= 300:
-            self.cutscene_state = 1
-            self.cutscene_start_time = self.now
-
-    elif self.cutscene_state == 1:
-        if self.pb.action != 1:
-            self.pb.set_action(1)
-        if self.now - self.cutscene_start_time > 5000:
-            self.cutscene_state = 2
-            self.cutscene_start_time = self.now
-            self.ice_king.pos = [1300, 150]
-
-    elif self.cutscene_state == 2:
-        if self.ice_king.action != 0:
-            self.ice_king.set_action(0)
-        if self.ice_king.pos[0] > SCREEN_WIDTH:
-            self.ice_king.pos = [1300, 150]
-        if self.ice_king.pos[0] > self.pb.pos[0] + 100:
-            self.ice_king.move(dx=self.ice_king_velocity[0], dy=self.ice_king_velocity[1])
-        else:
-            self.cutscene_state = 3
-            self.cutscene_start_time = self.now
-
-    elif self.cutscene_state == 3:
-        if self.ice_king.action != 0:
-            self.ice_king.set_action(0)
-        if self.finn.action != 0:
-            self.finn.set_action(0)
-
-        if self.now - self.cutscene_start_time < 3000:
-            hover_offset = 10 * math.sin(pygame.time.get_ticks() * 0.005)
-            self.ice_king.pos[1] = 150 + hover_offset
-        else:
-            if self.ice_king.action != 1:
-                self.ice_king.set_action(1)
-            if not self.special_effect_visible:
-                self.special_effect.set_action(0)
-                self.special_effect_visible = True
-                self.special_effect.pos = [self.pb.pos[0], self.pb.pos[1] - 10]
-            if self.pb.action != 2:
-                self.pb.set_action(2)
-
-            hover_offset = 10 * math.sin(pygame.time.get_ticks() * 0.005)
-            self.ice_king.pos[1] = 150 + hover_offset
-
-            if self.now - self.cutscene_start_time > 6000:
-                self.pb.visible = False
-                self.special_effect_visible = False
-                self.cutscene_state = 4
-                self.cutscene_start_time = self.now
-
-    elif self.cutscene_state == 4:
-        if self.ice_king.action != 2:
-            self.ice_king.set_action(2)
-        self.ice_king.move(dx=5, dy=-1)
-        if self.ice_king.pos[0] > SCREEN_WIDTH:
-            self.cutscene_state = 5
-            self.cutscene_start_time = self.now
-
-    elif self.cutscene_state == 5:
-        if self.finn.action != 2:
-            self.finn.set_action(2)
-        if self.now - self.cutscene_start_time > 2000:
-            self.cutscene_state = 6
-            self.cutscene_start_time = self.now
-
-    elif self.cutscene_state == 6:
-        self.gameplay_started = True
-        self.cutscene_state = 7
-
-        self.emptyBg(3)  # draw scrolling background first
 
 class Fence(pygame.sprite.Sprite):
   def __init__(self, x, y):
@@ -897,139 +795,211 @@ class FenceManager:
 
 
 class Bullet(pygame.sprite.Sprite):
-  def __init__(self, x, y, image_path, speed, unwanted_colors):
-      super().__init__()
-      self.bullet_animation = CharacterAnimation(image_path, [4], [52], [50], 60, unwanted_colors, [x, y], scale=1)
-      self.rect = self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame].get_rect(topleft=(x, y))
-      self.speed = speed
-      self.x = x
-      self.y = y
-      self.last_update_time = pygame.time.get_ticks()
-      self.animation_cooldown = 100
+    def __init__(self, x, y, image_path, speed, unwanted_colors):
+        super().__init__()
 
-  def update(self):
-      self.x += self.speed
-      self.rect.x = self.x
+        # Set up sprite sheet and animation for bullet
+        self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
+        self.sprite_sheet = spritesheet.SpriteSheet(self.sprite_sheet_image)
+        
+        self.animation_list = []
+        self.frame_width = 50  # Width of one frame in sprite sheet (adjust based on your sprite sheet)
+        self.frame_height = 52  # Height of one frame in sprite sheet (adjust based on your sprite sheet)
+        self.frame_heights = [52]  # List of frame heights (for simplicity, just one row of frames)
+        self.frame_widths = [50]  # List of frame widths
+        self.unwanted_colors = unwanted_colors  # Color to be made transparent
+        self.cooldown = 100  # Frame update speed in milliseconds
+        self.frame = 0  # Starting frame
+        self.action = 0  # Action index (not needed for a simple bullet animation)
+        self.last_update = pygame.time.get_ticks()
 
-      # Handle animation updates
-      current_time = pygame.time.get_ticks()
-      if current_time - self.last_update_time > self.animation_cooldown:
-          self.bullet_animation.update()  # Update the bullet's animation frame
-          self.last_update_time = current_time
+        self.load_frames([4])  # Number of frames in the animation (adjust if there are more frames)
+        
+        self.image = self.animation_list[self.action][self.frame]
+        self.rect = self.image.get_rect(topleft=(x, y))
 
-  def draw(self, screen):
-      screen.blit(self.bullet_animation.animation_list[self.bullet_animation.action][self.bullet_animation.frame], self.rect.topleft)
-      pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+        self.speed = speed  # Bullet speed (speed at which the bullet moves)
+        self.x = x
+        self.y = y
+
+    def load_frames(self, animation_steps):
+        """Load frames from sprite sheet for each action."""
+        step_counter = 0
+        for steps in animation_steps:
+            temp_list = []
+            for _ in range(steps):
+                img = self.get_image(step_counter)
+                img.set_colorkey(self.unwanted_colors[0])  # Make unwanted color transparent
+                temp_list.append(img)
+                step_counter += 1
+            self.animation_list.append(temp_list)
+
+    def get_image(self, frame_x):
+        """Extract individual frame from the sprite sheet."""
+        img = self.sprite_sheet.subsurface(
+            pygame.Rect(frame_x * self.frame_width, 0, self.frame_width, self.frame_height)
+        )
+        return img
+
+    def update(self):
+        """Update bullet position and animation frame."""
+        # Move the bullet
+        self.rect.x += self.speed
+
+        # Update animation frame
+        now = pygame.time.get_ticks()
+        if now - self.last_update >= self.cooldown:
+            self.frame += 1
+            self.last_update = now
+            if self.frame >= len(self.animation_list[self.action]):
+                self.frame = 0  # Loop back to the first frame
+
+        # If the bullet goes off-screen, remove it
+        if self.rect.x > SCREEN_WIDTH:
+            self.kill()
+
+    def draw(self, screen):
+        """Draw the bullet on the screen."""
+        screen.blit(self.animation_list[self.action][self.frame], self.rect.topleft)
+        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)  # Optional: Draw a red border around the bullet for debugging
+
+import pygame
+import spritesheet
+from pathlib import Path  # Ensure Path is imported for handling paths
 
 class Finn(pygame.sprite.Sprite):
-  def __init__(self, x, y, health_bar, stamina_bar):
-      super().__init__()
-      self.pos = [x, y]
-      
-      # Animation setup
-      self.finn_path = Path("assets") / "character" / "Finn_Running.png"
-      self.unwanted_colors = [(0, 162, 232)]
-      self.finn = CharacterAnimation(self.finn_path, [10, 10, 8], [66, 75.3, 83.5], [88, 88, 88, 88], 60, self.unwanted_colors, [x, y], scale=1.2)
-      self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
-      self.rect = pygame.Rect(self.pos[0], self.pos[1], 10, 10)
-      
+    def __init__(self, x, y, health_bar, stamina_bar):
+        super().__init__()
 
-      # Jumping setup
-      self.is_jumping = False
-      self.jump_velocity = -15
-      self.gravity = 0.6
-      self.finn_y_velocity = 0
+        # Set up sprite sheet for Finn (adjust this to match the correct path to your sprite sheet)
+        self.finn_path = Path("assets") / "character" / "Finn_Running.png"
+        self.unwanted_colors = [(0, 162, 232)]  # Transparent color
+        self.sprite_sheet_image = pygame.image.load(self.finn_path).convert_alpha()
+        self.sprite_sheet = spritesheet.SpriteSheet(self.sprite_sheet_image)
 
-      # Load sound effects
-      self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
-      self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
+        self.animation_list = []
+        self.frame_widths = [88, 88, 88, 88]  # Adjust to fit your sprite sheet width per action
+        self.frame_heights = [66, 75.3, 83.5]  # Adjust to fit your sprite sheet height per action
+        self.cooldown = 60  # Animation frame change cooldown
+        self.frame = 0
+        self.action = 0
+        self.last_update = pygame.time.get_ticks()
 
-      # Bullet control
-      self.bullets = pygame.sprite.Group()
-      self.BULLET_SPEED = 6
-      self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
+        self.load_frames([10, 10, 8])  # Number of frames per action (run, idle, etc.)
+        
+        self.image = self.animation_list[self.action][self.frame]
+        self.rect = pygame.Rect(x, y, self.image.get_width(), self.image.get_height())
+        self.pos = [x, y]
 
-      # Lane control
-      self.lanes = [220, 310, 410]
-      self.current_lane = 1
-      self.lane_target_y = self.lanes[self.current_lane]
+        # Jumping setup
+        self.is_jumping = False
+        self.jump_velocity = -15
+        self.gravity = 0.6
+        self.finn_y_velocity = 0
 
-      # Speed control
-      self.speed = 5
-      self.health_bar = health_bar
-      self.stamina_bar = stamina_bar
+        # Sound effects
+        self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
+        self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
 
-      # Bullet control
-      self.last_shoot_time = 0
-      self.shoot_cooldown = 1000
+        # Bullet control
+        self.bullets = pygame.sprite.Group()
+        self.BULLET_SPEED = 6
+        self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
 
-  def update(self):
-      self.finn.update()
-      self.image = self.finn.animation_list[self.finn.action][self.finn.frame]
-      print(self.finn.animation_list[0][0].get_size())
-      self.rect = pygame.Rect(self.pos[0], self.pos[1], 79, 75)
+        # Lane control
+        self.lanes = [220, 310, 410]
+        self.current_lane = 1
+        self.lane_target_y = self.lanes[self.current_lane]
 
-      # Handle jumping
-      if self.is_jumping:
-          self.finn_y_velocity += self.gravity
-          self.pos[1] += self.finn_y_velocity
-          if self.pos[1] >= self.lanes[self.current_lane]:
-              self.pos[1] = self.lanes[self.current_lane]
-              self.is_jumping = False
-              self.finn.set_action(0)
+        # Speed control
+        self.speed = 5
+        self.health_bar = health_bar
+        self.stamina_bar = stamina_bar
 
-      # Smooth lane changing
-      if abs(self.pos[1] - self.lane_target_y) > 1:
-          if self.pos[1] < self.lane_target_y:
-              self.pos[1] += 5
-          elif self.pos[1] > self.lane_target_y:
-              self.pos[1] -= 5
-      else:
-          self.pos[1] = self.lane_target_y
+        # Bullet control
+        self.last_shoot_time = 0
+        self.shoot_cooldown = 1000
 
-      # Update bullet movement
-      for bullet in self.bullets:
-          bullet.update()
-          # If the bullet goes off-screen, remove it
-          if bullet.rect.x > SCREEN_WIDTH:
-              bullet.kill()
+    def load_frames(self, animation_steps):
+        """Load frames from sprite sheet for each action."""
+        step_counter = 0
+        for steps in animation_steps:
+            temp_list = []
+            for _ in range(steps):
+                img = self.sprite_sheet.get_image(
+                    step_counter,
+                    self.frame_heights[0],  # You can adjust this to use different heights for each action
+                    self.frame_widths[0],  # You can adjust this to use different widths for each action
+                    1,
+                    self.unwanted_colors
+                )
+                temp_list.append(img)
+                step_counter += 1
+            self.animation_list.append(temp_list)
 
-  def draw(self, screen):
-      screen.blit(self.image, self.rect.topleft)
-      pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
-      for bullet in self.bullets:
-          bullet.draw(screen)
+    def update(self):
+        """Update Finn's position and animation frame."""
+        now = pygame.time.get_ticks()
+        if now - self.last_update >= self.cooldown:
+            self.frame += 1
+            self.last_update = now
+            if self.frame >= len(self.animation_list[self.action]):
+                self.frame = 0
 
-  def handle_input(self, event):
-      if self.is_jumping:
-          return
-      
-      if event.type == pygame.KEYDOWN:
-          if event.key == pygame.K_w and self.current_lane > 0:
-              self.current_lane -= 1
-              self.lane_target_y = self.lanes[self.current_lane]
-          elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
-              self.current_lane += 1
-              self.lane_target_y = self.lanes[self.current_lane]
-          elif event.key == pygame.K_SPACE and not self.is_jumping:
-              self.is_jumping = True
-              self.finn_y_velocity = self.jump_velocity
-              self.finn.set_action(1)
-              self.jump_sound.play()
+        self.image = self.animation_list[self.action][self.frame]
+        self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
 
-      if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-          current_time = pygame.time.get_ticks()
-          if current_time - self.last_shoot_time >= self.shoot_cooldown:
-              self.finn.set_action(2)
-              self.shoot_bullet()
-              self.shoot_sound.play()
-              self.last_shoot_time = current_time
+        # Handle jumping
+        if self.is_jumping:
+            self.finn_y_velocity += self.gravity
+            self.pos[1] += self.finn_y_velocity
+            if self.pos[1] >= self.lanes[self.current_lane]:
+                self.pos[1] = self.lanes[self.current_lane]
+                self.is_jumping = False
+                self.set_action(0)
 
-  def shoot_bullet(self):
-      bullet_x = self.pos[0] + 40
-      bullet_y = self.pos[1] + 25
-      new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors)
-      self.bullets.add(new_bullet)
+    def draw(self, screen):
+        """Draw Finn and bullets."""
+        screen.blit(self.image, self.rect.topleft)
+        for bullet in self.bullets:
+            bullet.draw(screen)
+
+    def handle_input(self, event):
+        if self.is_jumping:
+            return
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_w and self.current_lane > 0:
+                self.current_lane -= 1
+                self.lane_target_y = self.lanes[self.current_lane]
+            elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
+                self.current_lane += 1
+                self.lane_target_y = self.lanes[self.current_lane]
+            elif event.key == pygame.K_SPACE and not self.is_jumping:
+                self.is_jumping = True
+                self.finn_y_velocity = self.jump_velocity
+                self.set_action(1)
+                self.jump_sound.play()
+
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            current_time = pygame.time.get_ticks()
+            if current_time - self.last_shoot_time >= self.shoot_cooldown:
+                self.set_action(2)
+                self.shoot_bullet()
+                self.shoot_sound.play()
+                self.last_shoot_time = current_time
+
+    def set_action(self, action_index):
+        if action_index < len(self.animation_list):
+            self.action = action_index
+            self.frame = 0
+
+    def shoot_bullet(self):
+        bullet_x = self.pos[0] + 40
+        bullet_y = self.pos[1] + 25
+        new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors)
+        self.bullets.add(new_bullet)
+
 
 
 health_bar = HealthBar()
@@ -1041,14 +1011,12 @@ clock = pygame.time.Clock()
 running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
 running_sound.play()
 
-
 #start
 while running:
   clock.tick(FPS)
   scene.emptyBg(10)
   scene.level1(10, True, 2)
 
-  # Handle events and update the mouse position
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
