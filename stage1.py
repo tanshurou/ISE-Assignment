@@ -624,15 +624,10 @@ class Scenes():
     self.inventory.handle_hover()
     self.finnSR.draw()    #DELETE LTR
     self.potion.pick_up_potion(self.finnSR)
-<<<<<<< HEAD
-
-
-=======
     self.finn.update
     self.finn.draw(screen)
     self.mushroom.killed(self.finn)
 
->>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
     #           {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
@@ -862,15 +857,12 @@ class MushroomManager:
       if mushroom.x < -100:
          mushroom.kill()
 
-<<<<<<< HEAD
-=======
   def killed(self, finn):
     for mushroom in self.mushroom_group:
       if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), True):
          mushroom.kill()
          print("kill")
   
->>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
 
       
 
@@ -1104,11 +1096,7 @@ running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Soun
 running_sound.play()
 
 
-<<<<<<< HEAD
-
-=======
 #start
->>>>>>> 507bdbcd35ca2d8983c9df6a44ffd8b9f7cb906c
 while running:
   pygame.mouse.set_visible(False)
   clock.tick(FPS)
