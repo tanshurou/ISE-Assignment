@@ -8,8 +8,6 @@ from utilities import resizeObject
 import random
 from utilities import getImage
 
-from characterMovementAll import CharacterAnimation
-
 import pygame.mixer
 from PIL import Image
 
@@ -797,181 +795,110 @@ class FenceManager:
 
     self.fence_group.draw(screen) 
 
+class SpriteSheet():
+  def __init__(self, image):
+      self.sheet = image
 
-class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, image_path, speed, unwanted_colors):
-        super().__init__()
-
-        # Set up sprite sheet and animation for bullet
-        self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
-        self.sprite_sheet = spritesheet.SpriteSheet(self.sprite_sheet_image)
-        
-        self.animation_list = []
-        self.frame_width = 50  # Width of one frame in sprite sheet (adjust based on your sprite sheet)
-        self.frame_height = 52  # Height of one frame in sprite sheet (adjust based on your sprite sheet)
-        self.frame_heights = [52]  # List of frame heights (for simplicity, just one row of frames)
-        self.frame_widths = [50]  # List of frame widths
-        self.unwanted_colors = unwanted_colors  # Color to be made transparent
-        self.cooldown = 100  # Frame update speed in milliseconds
-        self.frame = 0  # Starting frame
-        self.action = 0  # Action index (not needed for a simple bullet animation)
-        self.last_update = pygame.time.get_ticks()
-
-        self.load_frames([4])  # Number of frames in the animation (adjust if there are more frames)
-        
-        self.image = self.animation_list[self.action][self.frame]
-        self.rect = self.image.get_rect(topleft=(x, y))
-
-        self.speed = speed  # Bullet speed (speed at which the bullet moves)
-        self.x = x
-        self.y = y
-
-    def load_frames(self, animation_steps):
-        """Load frames from sprite sheet for each action."""
-        step_counter = 0
-        for steps in animation_steps:
-            temp_list = []
-            for _ in range(steps):
-                img = self.get_image(step_counter)
-                img.set_colorkey(self.unwanted_colors[0])  # Make unwanted color transparent
-                temp_list.append(img)
-                step_counter += 1
-            self.animation_list.append(temp_list)
-
-    def get_image(self, frame_x):
-        """Extract individual frame from the sprite sheet."""
-        img = self.sprite_sheet.subsurface(
-            pygame.Rect(frame_x * self.frame_width, 0, self.frame_width, self.frame_height)
-        )
-        return img
-
-    def update(self):
-        """Update bullet position and animation frame."""
-        # Move the bullet
-        self.rect.x += self.speed
-
-        # Update animation frame
-        now = pygame.time.get_ticks()
-        if now - self.last_update >= self.cooldown:
-            self.frame += 1
-            self.last_update = now
-            if self.frame >= len(self.animation_list[self.action]):
-                self.frame = 0  # Loop back to the first frame
-
-        # If the bullet goes off-screen, remove it
-        if self.rect.x > SCREEN_WIDTH:
-            self.kill()
-
-    def draw(self, screen):
-        """Draw the bullet on the screen."""
-        screen.blit(self.animation_list[self.action][self.frame], self.rect.topleft)
-        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)  # Optional: Draw a red border around the bullet for debugging
-
-import pygame
-import spritesheet
-from pathlib import Path  # Ensure Path is imported for handling paths
+  def get_image(self, frame_x, frame_width, frame_height, scale, colours):
+      img = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
+      img.blit(self.sheet, (0, 0), (frame_x * frame_width, 0, frame_width, frame_height))
+      img = pygame.transform.scale(img, (int(frame_width * scale), int(frame_height * scale)))
+      for x in range(img.get_width()):
+          for y in range(img.get_height()):
+              if img.get_at((x, y))[:3] in colours:
+                  img.set_at((x, y), (0, 0, 0, 0))
+      return img
 
 class Finn(pygame.sprite.Sprite):
-    def __init__(self, x, y, health_bar, stamina_bar):
+    def __init__(self, x, y, health_bar, stamina_bar, scale=1.2):
         super().__init__()
-
-        # Set up sprite sheet for Finn (adjust this to match the correct path to your sprite sheet)
+        # Finn Setup
+        self.scale = scale
         self.finn_path = Path("assets") / "character" / "Finn_Running.png"
-        self.unwanted_colors = [(0, 162, 232)]  # Transparent color
+        self.unwanted_colors = [(0, 162, 232)]
         self.sprite_sheet_image = pygame.image.load(self.finn_path).convert_alpha()
-        self.sprite_sheet = spritesheet.SpriteSheet(self.sprite_sheet_image)
-
+        self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
         self.animation_list = []
-        self.frame_widths = [88, 88, 88, 88]  # Adjust to fit your sprite sheet width per action
-        self.frame_heights = [66, 75.3, 83.5]  # Adjust to fit your sprite sheet height per action
-        self.cooldown = 60  # Animation frame change cooldown
+        self.frame_width = 88
+        self.frame_height = 66
+        self.cooldown = 100
         self.frame = 0
-        self.action = 0
-        self.last_update = pygame.time.get_ticks()
-
-        self.load_frames([10, 10, 8])  # Number of frames per action (run, idle, etc.)
-        
-        self.image = self.animation_list[self.action][self.frame]
-        self.rect = pygame.Rect(x, y, self.image.get_width(), self.image.get_height())
+        self.finn_action = 0
+        self.last_update = pygame.time.get_ticks() - self.cooldown - 1
+        self.load_frames([10, 10, 8])
+        self.image = self.animation_list[self.finn_action][self.frame]
+        self.rect = self.image.get_rect(topleft=(x, y))
         self.pos = [x, y]
 
-        # Jumping setup
+        # Finn Jumping Mechanic
         self.is_jumping = False
-        self.jump_velocity = -15
-        self.gravity = 0.6
+        self.jump_velocity = -15 * self.scale
+        self.gravity = 0.6 * self.scale
         self.finn_y_velocity = 0
 
-        # Sound effects
+        # Audio for Finn
         self.jump_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Jump Sound Effect Finn.mp3")
         self.shoot_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Shoot Sound Effect Finn.mp3")
 
-        # Bullet control
-        self.bullets = pygame.sprite.Group()
-        self.BULLET_SPEED = 6
+        # Bullet Setup
+        self.bullet_group = pygame.sprite.Group()
+        self.BULLET_SPEED = int(5 * self.scale) 
         self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
 
-        # Lane control
+        # Lane Setup
         self.lanes = [220, 310, 410]
         self.current_lane = 1
         self.lane_target_y = self.lanes[self.current_lane]
 
-        # Speed control
-        self.speed = 5
+        # Health bar and stamina bar setup
+        self.speed = 5 * self.scale
         self.health_bar = health_bar
         self.stamina_bar = stamina_bar
-
-        # Bullet control
         self.last_shoot_time = 0
-        self.shoot_cooldown = 1000
+        self.shoot_cooldown = 1500
+        self.set_finn_action(0)
 
     def load_frames(self, animation_steps):
-        """Load frames from sprite sheet for each action."""
         step_counter = 0
         for steps in animation_steps:
             temp_list = []
             for _ in range(steps):
-                img = self.sprite_sheet.get_image(
-                    step_counter,
-                    self.frame_heights[0],  # You can adjust this to use different heights for each action
-                    self.frame_widths[0],  # You can adjust this to use different widths for each action
-                    1,
-                    self.unwanted_colors
-                )
+                img = self.sprite_sheet.get_image(step_counter, 66, 88, self.scale, self.unwanted_colors)
                 temp_list.append(img)
                 step_counter += 1
             self.animation_list.append(temp_list)
 
     def update(self):
-        """Update Finn's position and animation frame."""
         now = pygame.time.get_ticks()
         if now - self.last_update >= self.cooldown:
-            self.frame += 1
+            self.frame = (self.frame + 1) % len(self.animation_list[self.finn_action])
             self.last_update = now
-            if self.frame >= len(self.animation_list[self.action]):
-                self.frame = 0
+            if self.frame == 0 and self.finn_action != 0:
+                self.set_finn_action(0)
 
-        self.image = self.animation_list[self.action][self.frame]
+        self.image = self.animation_list[self.finn_action][self.frame]
         self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
 
-        # Handle jumping
         if self.is_jumping:
             self.finn_y_velocity += self.gravity
             self.pos[1] += self.finn_y_velocity
             if self.pos[1] >= self.lanes[self.current_lane]:
                 self.pos[1] = self.lanes[self.current_lane]
                 self.is_jumping = False
-                self.set_action(0)
+                self.set_finn_action(0)
+
+        for bullet in list(self.bullet_group):
+            bullet.update()
+            if bullet.rect.x > 2000:
+                self.bullet_group.remove(bullet)
 
     def draw(self, screen):
-        """Draw Finn and bullets."""
         screen.blit(self.image, self.rect.topleft)
-        for bullet in self.bullets:
+        pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+        for bullet in self.bullet_group:
             bullet.draw(screen)
 
     def handle_input(self, event):
-        if self.is_jumping:
-            return
-
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_w and self.current_lane > 0:
                 self.current_lane -= 1
@@ -982,27 +909,93 @@ class Finn(pygame.sprite.Sprite):
             elif event.key == pygame.K_SPACE and not self.is_jumping:
                 self.is_jumping = True
                 self.finn_y_velocity = self.jump_velocity
-                self.set_action(1)
+                self.set_finn_action(1)
                 self.jump_sound.play()
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             current_time = pygame.time.get_ticks()
             if current_time - self.last_shoot_time >= self.shoot_cooldown:
-                self.set_action(2)
+                self.set_finn_action(2)
                 self.shoot_bullet()
                 self.shoot_sound.play()
                 self.last_shoot_time = current_time
 
-    def set_action(self, action_index):
+    def set_finn_action(self, action_index):
         if action_index < len(self.animation_list):
-            self.action = action_index
+            self.finn_action = action_index
             self.frame = 0
+            self.last_update = pygame.time.get_ticks() - self.cooldown - 1
 
     def shoot_bullet(self):
-        bullet_x = self.pos[0] + 40
-        bullet_y = self.pos[1] + 25
-        new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors)
-        self.bullets.add(new_bullet)
+        bullet_x = self.pos[0] + int(40 * self.scale)
+        bullet_y = self.pos[1] + int(25 * self.scale)
+        new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
+        self.bullet_group.add(new_bullet)
+
+
+class Bullet(pygame.sprite.Sprite):
+  def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5):
+      super().__init__()
+
+      # Bullet Setup
+      self.scale = scale
+      self.collision_scale = collision_scale
+      self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
+      self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
+      self.animation_list = []
+      self.frame_width = 50
+      self.frame_height = 50
+      self.unwanted_colors = unwanted_colors
+      self.cooldown = 100
+      self.frame = 0
+      self.action = 0
+      self.last_update = pygame.time.get_ticks() - self.cooldown - 1
+      self.load_frames([4])
+      self.image = self.animation_list[self.action][self.frame]
+      self.rect = self.image.get_rect(topleft=(x, y))
+      self.speed = speed
+      self.update_collision_rect()
+
+  def update_collision_rect(self):
+      width = int(self.rect.width * self.collision_scale)
+      height = int(self.rect.height * self.collision_scale)
+      self.collision_rect = pygame.Rect(0, 0, width, height)
+      self.collision_rect.topleft = self.rect.center
+
+  def load_frames(self, animation_steps):
+      step_counter = 0
+      for steps in animation_steps:
+          temp_list = []
+          for _ in range(steps):
+              img = self.get_image(step_counter)
+              img.set_colorkey(self.unwanted_colors[0])
+              temp_list.append(img)
+              step_counter += 1
+          self.animation_list.append(temp_list)
+
+  def get_image(self, frame_x):
+      raw_img = pygame.Surface((self.frame_width, self.frame_height), pygame.SRCALPHA)
+      raw_img.blit(self.sprite_sheet.sheet, (0, 0), (frame_x * 50, 0, 50, 52))
+      raw_img = pygame.transform.scale(raw_img, (int(50 * self.scale), int(52 * self.scale)))
+      for x in range(raw_img.get_width()):
+          for y in range(raw_img.get_height()):
+              if raw_img.get_at((x, y))[:3] in self.unwanted_colors:
+                  raw_img.set_at((x, y), (0, 0, 0, 0))
+      return raw_img
+
+  def update(self):
+      self.rect.x += self.speed
+      self.update_collision_rect()
+      
+      now = pygame.time.get_ticks()
+      if now - self.last_update >= self.cooldown:
+          self.frame = (self.frame + 1) % len(self.animation_list[self.action])
+          self.image = self.animation_list[self.action][self.frame]
+          self.last_update = now
+
+  def draw(self, screen):
+      screen.blit(self.image, self.rect.topleft)
+      pygame.draw.rect(screen, (255, 0, 0), self.collision_rect, 2)
 
 
 class EffectManager():
@@ -1051,10 +1044,7 @@ class EffectManager():
     overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     overlay.fill((0, 255, 0, 80))
     screen.blit(overlay, (0, 0))
-       
-      
-  
-
+             
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
@@ -1075,11 +1065,14 @@ while running:
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
+
       scene.finn.handle_input(event)
       scene.finnSR.get_input(event)
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
-
+      
+  scene.finn.update()
+  scene.finn.draw(screen)
   test = Mushroom(100) 
   pygame.display.update()
 
