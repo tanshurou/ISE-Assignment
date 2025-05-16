@@ -353,17 +353,19 @@ class InventoryBar():
       return False
   
   def use_potion(self, item_index):
-      # Store the potion type before removing it
       potion_type = self.items[item_index]
       self.items[item_index] = None
-      
-      # Set the current effect type and activate effect
+
       self.current_effect_type = potion_type
       self.effect_active = True
-      self.animation_index = 0  # Reset animation frame counter
-      self.last_update_time = pygame.time.get_ticks()  # Reset timer
-      self.effect_slot_index = item_index  # Store which slot the effect should appear in
-      
+      self.animation_index = 0
+      self.last_update_time = pygame.time.get_ticks()
+      self.effect_slot_index = item_index
+
+      # === Trigger EffectManager Logic ===
+      if potion_type == 1:  # Purple potion
+          scene.effects.trigger_bullet_buff()
+
       return True
   
   def use_potion_animation(self):
@@ -443,9 +445,7 @@ class Potions(pygame.sprite.Sprite):
         if self.animation_index >= 8:
           self.animation_index = 0
      
-    self.rect = pygame.Rect(self.x, self.y, 48, 48)
-    pygame.draw.rect(screen, (255,0,0), self.rect, 3)
-    
+    self.rect = pygame.Rect(self.x, self.y, 48, 48)  
     screen.blit(self.animation_list[self.potion_type][self.animation_index], (self.x, self.y))
      
 
@@ -707,6 +707,7 @@ class Scenes():
     self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
     self.mushroom.collide(self.finn)
     self.effects.apply_effects()
+    self.fence.bullet_hit(self.finn.bullet_group, self.finn.bullet_buff)
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -724,195 +725,190 @@ class Scenes():
 
 
 class Fence(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        fence_path = Path("assets") / "stage_1_bg" / "2 Objects" / "2 Fence" / "8.png"
-        fence_img = pygame.image.load(fence_path)
-        fence_img = resizeObject(fence_img, 3)
-        self.image = fence_img 
-        self.original_image = self.image.copy()
-        self.fence_x = x
-        self.fence_y = y
-        self.rect = fence_img.get_rect(topleft=(self.fence_x, self.fence_y))
-        
-        # Blinking parameters
-        self.hit = False
-        self.blink_start_time = 0
-        self.blink_duration = 1000  # Total duration for all blinks (1 second)
-        self.blink_frequency = 100  # Time for one on/off cycle (100ms = 10 blinks per second)
-        self.blink_intensity = 255  # Full white (255, 255, 255)
+  def __init__(self, x, y):
+      super().__init__()
+      fence_path = Path("assets") / "stage_1_bg" / "2 Objects" / "2 Fence" / "8.png"
+      fence_img = pygame.image.load(fence_path)
+      fence_img = resizeObject(fence_img, 3)
+      self.image = fence_img 
+      self.original_image = self.image.copy()
+      self.fence_x = x
+      self.fence_y = y
+      self.rect = fence_img.get_rect(topleft=(self.fence_x, self.fence_y))
+      
+      # Blinking parameters
+      self.hit = False
+      self.blink_start_time = 0
+      self.blink_duration = 1000  # Total duration for all blinks (1 second)
+      self.blink_frequency = 100  # Time for one on/off cycle (100ms = 10 blinks per second)
+      self.blink_intensity = 255  # Full white (255, 255, 255)
 
-    def update(self, speed):
-        self.fence_x -= speed
-        self.rect.x = self.fence_x
+  def update(self, speed):
+      self.fence_x -= speed
+      self.rect.x = self.fence_x
 
-        current_time = pygame.time.get_ticks()
+      current_time = pygame.time.get_ticks()
 
-        if self.hit and current_time - self.blink_start_time < self.blink_duration:
-            # Calculate if we're in an "on" phase of the blink cycle
-            # This creates a square wave pattern that alternates between TRUE and FALSE
-            blink_phase = ((current_time - self.blink_start_time) // (self.blink_frequency // 2)) % 2
-            
-            if blink_phase == 0:
-                # "ON" phase - Show white version
-                self.image = self.original_image.copy()
-                # Create a white surface with high opacity
-                white_surface = pygame.Surface(self.image.get_size()).convert_alpha()
-                white_surface.fill((255, 255, 255, 220))  # Almost solid white (220/255 opacity)
-                self.image.blit(white_surface, (0, 0))
-            else:
-                # "OFF" phase - Show original
-                self.image = self.original_image.copy()
-        else:
-            # Blinking complete or not blinking
-            self.image = self.original_image.copy()
-            self.hit = False  # Reset hit flag after blink is done
-        
-    def blink(self):
-        self.hit = True
-        self.blink_start_time = pygame.time.get_ticks()
-     
+      if self.hit and current_time - self.blink_start_time < self.blink_duration:
+          # Calculate if we're in an "on" phase of the blink cycle
+          # This creates a square wave pattern that alternates between TRUE and FALSE
+          blink_phase = ((current_time - self.blink_start_time) // (self.blink_frequency // 2)) % 2
+          
+          if blink_phase == 0:
+              # "ON" phase - Show white version
+              self.image = self.original_image.copy()
+              # Create a white surface with high opacity
+              white_surface = pygame.Surface(self.image.get_size()).convert_alpha()
+              white_surface.fill((255, 255, 255, 220))  # Almost solid white (220/255 opacity)
+              self.image.blit(white_surface, (0, 0))
+          else:
+              # "OFF" phase - Show original
+              self.image = self.original_image.copy()
+      else:
+          # Blinking complete or not blinking
+          self.image = self.original_image.copy()
+          self.hit = False  # Reset hit flag after blink is done
+      
+  def blink(self):
+      self.hit = True
+      self.blink_start_time = pygame.time.get_ticks()
         
   
 class Mushroom(pygame.sprite.Sprite):
-    def __init__(self, y, effect_manager):
-        super().__init__()
-        self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
-        self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
-        self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
-        spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
-                         pygame.image.load(self.attack_spritesheet).convert_alpha(), 
-                         pygame.image.load(self.die_spritesheet).convert_alpha()]
-        
-        self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
-        self.animation_frames = [7,9,4]
-        self.animation_list = []
-        self.animation_index = [0,0,0,0,0]
-        self.explode_animation = []
-        self.poison_animation = []
-        self.last_update_time = 0
-        self.explode_animation_last_update_time = 0
-        self.collide_animation_update_time = 0
-        self.x = 1300
-        self.y = y
-        self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
-        self.dead = False
-        self.collide = False
-        self.health = 2
-        self.special_effect = effect_manager
-        
-        # Blink effect variables
-        self.is_blinking = False
-        self.blink_duration = 500  # Total blinking time in milliseconds
-        self.blink_start_time = 0
-        self.blink_interval = 100  # Time between blink toggling in milliseconds
-        self.blink_visible = True  # Flag to toggle visibility during blinking
-        self.last_blink_toggle = 0
-        
-        for animation in range(len(spritesheets)):
-            placeholder = []
-            for frame in range(self.animation_frames[animation]):
-                img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
-                placeholder.append(img)
-                #screen.blit(img, (200,200))
-            self.animation_list.append(placeholder)
-        
-        explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
-        poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
-        explode_img = pygame.image.load(explode_path)
-        poison_img = pygame.image.load(poison_path)
-        
-        for frame in range(14):
-            img = getImage(explode_img, frame, 64, 64, 2.5)
-            img2 = getImage(poison_img, frame, 64, 64, 2.5)
-            self.explode_animation.append(img)
-            self.poison_animation.append(img2)
+  def __init__(self, y, effect_manager):
+      super().__init__()
+      self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
+      self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
+      self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
+      spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
+                        pygame.image.load(self.attack_spritesheet).convert_alpha(), 
+                        pygame.image.load(self.die_spritesheet).convert_alpha()]
+      
+      self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
+      self.animation_frames = [7,9,4]
+      self.animation_list = []
+      self.animation_index = [0,0,0,0,0]
+      self.explode_animation = []
+      self.poison_animation = []
+      self.last_update_time = 0
+      self.explode_animation_last_update_time = 0
+      self.collide_animation_update_time = 0
+      self.x = 1300
+      self.y = y
+      self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+      self.dead = False
+      self.collide = False
+      self.health = 2
+      self.special_effect = effect_manager
+      
+      # Blink effect variables
+      self.is_blinking = False
+      self.blink_duration = 500  # Total blinking time in milliseconds
+      self.blink_start_time = 0
+      self.blink_interval = 100  # Time between blink toggling in milliseconds
+      self.blink_visible = True  # Flag to toggle visibility during blinking
+      self.last_blink_toggle = 0
+      
+      for animation in range(len(spritesheets)):
+          placeholder = []
+          for frame in range(self.animation_frames[animation]):
+              img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
+              placeholder.append(img)
+              #screen.blit(img, (200,200))
+          self.animation_list.append(placeholder)
+      
+      explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
+      poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
+      explode_img = pygame.image.load(explode_path)
+      poison_img = pygame.image.load(poison_path)
+      
+      for frame in range(14):
+          img = getImage(explode_img, frame, 64, 64, 2.5)
+          img2 = getImage(poison_img, frame, 64, 64, 2.5)
+          self.explode_animation.append(img)
+          self.poison_animation.append(img2)
 
-    def take_damage(self, bullet_buff):
-        if bullet_buff == True:
-            self.health -= 2
-        else:
-            self.health -= 1
-        print(self.health)
-        
-        # Start blinking effect when taking damage
-        self.start_blinking()
-        
-        if self.health <= 0:
-            self.dead = True
-    
-    def start_blinking(self):
-        self.is_blinking = True
-        self.blink_start_time = pygame.time.get_ticks()
-        self.blink_visible = True
-        self.last_blink_toggle = self.blink_start_time
-    
-    def update_blinking(self):
-        if not self.is_blinking:
-            return True  # If not blinking, always visible
-        
-        current_time = pygame.time.get_ticks()
-        
-        # Check if blinking duration is over
-        if current_time - self.blink_start_time > self.blink_duration:
-            self.is_blinking = False
-            return True  # Blinking finished, sprite should be visible
-        
-        # Toggle visibility based on blink interval
-        if current_time - self.last_blink_toggle > self.blink_interval:
-            self.blink_visible = not self.blink_visible
-            self.last_blink_toggle = current_time
-        
-        return self.blink_visible  # Return current visibility state
+  def take_damage(self, bullet_buff):
+      if bullet_buff == True:
+          self.health -= 2
+      else:
+          self.health -= 1
+      print(self.health)
+      
+      # Start blinking effect when taking damage
+      self.start_blinking()
+      
+      if self.health <= 0:
+          self.dead = True
+  
+  def start_blinking(self):
+      self.is_blinking = True
+      self.blink_start_time = pygame.time.get_ticks()
+      self.blink_visible = True
+      self.last_blink_toggle = self.blink_start_time
+  
+  def update_blinking(self):
+      if not self.is_blinking:
+          return True  # If not blinking, always visible
+      
+      current_time = pygame.time.get_ticks()
+      
+      # Check if blinking duration is over
+      if current_time - self.blink_start_time > self.blink_duration:
+          self.is_blinking = False
+          return True  # Blinking finished, sprite should be visible
+      
+      # Toggle visibility based on blink interval
+      if current_time - self.last_blink_toggle > self.blink_interval:
+          self.blink_visible = not self.blink_visible
+          self.last_blink_toggle = current_time
+      
+      return self.blink_visible  # Return current visibility state
 
-    def animation(self, speed, action):
-        self.x -= speed
-        cooldown = 100  # Reduced cooldown for faster animation
-        
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_update_time > cooldown:
-            self.animation_index[action] += 1
-            self.last_update_time = current_time
-            if self.animation_index[action] >= self.animation_frames[action]:
-                self.animation_index[action] = 0
-        
-        self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
-    
-        if self.dead == False and self.collide == False:
-            # Only draw if the sprite should be visible during blinking
-            if self.update_blinking():
-                screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
-                pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
+  def animation(self, speed, action):
+      self.x -= speed
+      cooldown = 100  # Reduced cooldown for faster animation
+      
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_update_time > cooldown:
+          self.animation_index[action] += 1
+          self.last_update_time = current_time
+          if self.animation_index[action] >= self.animation_frames[action]:
+              self.animation_index[action] = 0
+      
+      self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+  
+      if self.dead == False and self.collide == False:
+          # Only draw if the sprite should be visible during blinking
+          if self.update_blinking():
+              screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
 
-    def killed(self):
-        cooldown = 100
-        current_time = pygame.time.get_ticks()
-        self.dead = True
-        
-        if current_time - self.explode_animation_last_update_time > cooldown:
-            self.animation_index[3] += 1
-            self.explode_animation_last_update_time = current_time
-        if self.animation_index[3] == 13:
-            self.kill()
-        screen.blit(self.explode_animation[self.animation_index[3]], (self.x-20, self.y-30))
+  def killed(self):
+      cooldown = 100
+      current_time = pygame.time.get_ticks()
+      self.dead = True
+      
+      if current_time - self.explode_animation_last_update_time > cooldown:
+          self.animation_index[3] += 1
+          self.explode_animation_last_update_time = current_time
+      if self.animation_index[3] == 13:
+          self.kill()
+      screen.blit(self.explode_animation[self.animation_index[3]], (self.x-20, self.y-30))
 
-    def poison(self):
-        cooldown = 100
-        current_time = pygame.time.get_ticks()
-        self.collide = True
-        
-        if current_time - self.collide_animation_update_time > cooldown and self.dead == False:
-            self.animation_index[4] += 1
-            self.collide_animation_update_time = current_time
-            self.special_effect.trigger_effect(0)
-        if self.animation_index[4] == 13:
-            self.kill()
-            print("poisoned")
-        screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
+  def poison(self):
+      cooldown = 100
+      current_time = pygame.time.get_ticks()
+      self.collide = True
+      
+      if current_time - self.collide_animation_update_time > cooldown and self.dead == False:
+          self.animation_index[4] += 1
+          self.collide_animation_update_time = current_time
+          self.special_effect.trigger_effect(0)
+      if self.animation_index[4] == 13:
+          self.kill()
+          print("poisoned")
+      screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
      
-
-     
-
 class Mouse(pygame.sprite.Sprite):
   def __init__(self):
     super().__init__()
@@ -924,13 +920,11 @@ class Mouse(pygame.sprite.Sprite):
 
   def get_input(self, event):
     mouse_pos = pygame.mouse.get_pos()
-
     self.x = mouse_pos[0]
     self.y = mouse_pos[1]
     self.rect = pygame.Rect(self.x + 20 , self.y, 50, 50)
     
   def draw(self):
-    pygame.draw.rect(screen, (255,0,0), self.rect, 3)
     screen.blit(self.img, (self.x, self.y))
     
 class MushroomManager:
@@ -987,10 +981,7 @@ class MushroomManager:
         if current_time - self.last_collide > 100:
            self.last_collide = current_time
            finn.health_bar.takeDamage(3)
-
       
-
-
 
 class FenceManager:
   def __init__(self, scroll_speed):
@@ -1022,11 +1013,19 @@ class FenceManager:
       if fence.fence_x < -50:
         fence.kill()
       if fence.rect.colliderect(finn.hitbox) and current_time - self.last_collision > 500:
-         self.last_collision = current_time
-         finn.health_bar.takeDamage(2)
-         fence.blink()
+          self.last_collision = current_time
+          finn.health_bar.takeDamage(2)
+          fence.blink()
 
-    self.fence_group.draw(screen) 
+    self.fence_group.draw(screen)
+
+  def bullet_hit(self, bullets, bullet_buff):
+    for fence in self.fence_group:
+        for bullet in bullets:
+            if fence.rect.colliderect(bullet.rect) and bullet_buff:
+                fence.kill()
+                bullets.remove(bullet)
+                break 
 
 class SpriteSheet():
     def __init__(self, image):
@@ -1160,7 +1159,6 @@ class Finn(pygame.sprite.Sprite):
 
   def draw(self, screen):
     screen.blit(self.image, self.rect.topleft)
-    pygame.draw.rect(screen, (255, 0, 0), self.hitbox, 2)
     for bullet in self.bullet_group:
         bullet.draw(screen)
 
@@ -1193,13 +1191,19 @@ class Finn(pygame.sprite.Sprite):
         self.last_update = pygame.time.get_ticks() - self.cooldown - 1
 
   def shoot_bullet(self):
-    bullet_x = self.pos[0] + int(40 * self.scale)
-    bullet_y = self.pos[1] + int(25 * self.scale)
-    new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
-    self.bullet_group.add(new_bullet)
+      bullet_x = self.pos[0] + int(40 * self.scale)
+      bullet_y = self.pos[1] + int(25 * self.scale)
+      # Choose sprite based on buff
+      bullet_sprite_path = (
+      Path("assets") / "character" / "Effects" / "purple_bullet.png" 
+      if self.bullet_buff else Path("assets") / "character" / "Bullet_animation.png")
+      is_purple = self.bullet_buff
+      frame_size = (50, 50) if not is_purple else (64, 64)
+      new_bullet = Bullet(bullet_x, bullet_y, str(bullet_sprite_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale, frame_size=frame_size)
+      self.bullet_group.add(new_bullet)
 
 class Bullet(pygame.sprite.Sprite):
-  def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5):
+  def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5, frame_size=(50,50)):
       super().__init__()
 
       # Bullet Setup
@@ -1208,8 +1212,9 @@ class Bullet(pygame.sprite.Sprite):
       self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
       self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
       self.animation_list = []
-      self.frame_width = 50
-      self.frame_height = 50
+      self.frame_width, self.frame_height = frame_size
+      self.frame_width = 50 if "Bullet_animation" in image_path else 64
+      self.frame_height = 50 if "Bullet_animation" in image_path else 64
       self.unwanted_colors = unwanted_colors
       self.cooldown = 100
       self.frame = 0
@@ -1252,8 +1257,6 @@ class Bullet(pygame.sprite.Sprite):
 
   def draw(self, screen):
       screen.blit(self.image, self.rect.topleft)
-      pygame.draw.rect(screen, (255, 0, 0), self.collision_rect, 2)
-
 
 class EffectManager():
   def __init__(self):
@@ -1262,64 +1265,95 @@ class EffectManager():
       self.last_updated_time = [0]
       self.effect_applied = [0]
 
-  def trigger_effect(self, effect):
-      # Set the effect as active
-      self.effect_applied[0] = 1
-      # IMPORTANT: Update the last updated time when triggering
-      self.last_updated_time[0] = pygame.time.get_ticks()
+      # ---- Bullet Buff Setup ----
+      self.bullet_buff_frames = []
+      buff_effect_path = Path("assets") / "character" / "Effects" / "purple_potion.png"
+      buff_sheet = pygame.image.load(buff_effect_path)
+
+      for i in range(10):
+          frame = getImage(buff_sheet, i, 64, 64, 4)
+          self.bullet_buff_frames.append(frame) 
+
+      self.bullet_buff_active = False
+      self.bullet_buff_start_time = 0
+      self.bullet_buff_duration = 5000
+      self.bullet_buff_index = 0
+      self.bullet_buff_last_update = 0
+      self.bullet_buff_cooldown = 150
+      self.finn_ref = None
+
+  def set_finn(self, finn):
+      self.finn_ref = finn
+
+  def trigger_bullet_buff(self):
+      if self.finn_ref:
+          self.bullet_buff_active = True
+          self.bullet_buff_start_time = pygame.time.get_ticks()
+          self.bullet_buff_index = 0
+          self.bullet_buff_last_update = 0
+          self.finn_ref.bullet_buff = True  # Activate Finn's bullet buff
+
+  def draw_bullet_buff(self):
+      if not self.bullet_buff_active or not self.finn_ref:
+          return
+
+      # Handle duration
+      now = pygame.time.get_ticks()
+      if now - self.bullet_buff_start_time > self.bullet_buff_duration:
+          self.bullet_buff_active = False
+          self.finn_ref.bullet_buff = False  # Reset Finn's state
+          return
+
+      # Handle animation
+      if now - self.bullet_buff_last_update > self.bullet_buff_cooldown:
+          self.bullet_buff_index = (self.bullet_buff_index + 1) % len(self.bullet_buff_frames)
+          self.bullet_buff_last_update = now
+
+      effect_img = self.bullet_buff_frames[self.bullet_buff_index]
+
+      # Center the effect around Finn
+      x = self.finn_ref.rect.centerx - effect_img.get_width() // 2
+      y = self.finn_ref.rect.centery - effect_img.get_height() // 2
+
+      screen.blit(effect_img, (x, y))
 
   def poisoned(self):
       time_ms = pygame.time.get_ticks()
-      # Get a temporary copy of the current screen
       temp = screen.copy()
-
-      # Calculate rotation and scale using sine wave
-      angle = math.sin(time_ms / 200) * 3  # degrees
+      angle = math.sin(time_ms / 200) * 3
       scale = 1 + math.sin(time_ms / 300) * 0.02
-
-      # Scale surface
       new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
       temp = pygame.transform.smoothscale(temp, new_size)
-
-      # Rotate surface
       temp = pygame.transform.rotate(temp, angle)
-
-      # Center it back on screen
       rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
-
-      # Clear and blit
       screen.fill((0, 0, 0))
       screen.blit(temp, rect.topleft)
-
-      # Optional: add green overlay
       overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
       overlay.fill((0, 255, 0, 80))
       screen.blit(overlay, (0, 0))
 
   def apply_effects(self):
-    if self.effect_applied[0] == 1:
-        current_time = pygame.time.get_ticks()
-        elapsed_time = current_time - self.last_updated_time[0]
-        
-        if elapsed_time < self.effect_duration[0]:
-            self.poisoned()
-        else:
-            # Fixed: Use = for assignment, not == for comparison
-            print("Effect duration expired, resetting")
-            self.effect_applied[0] = 0
-            # Fixed: Use = for assignment, not == for comparison
-            # Also, make sure to index the list properly
-            self.last_updated_time[0] = 0
-    
-      
-      
-  
+      if self.effect_applied[0] == 1:
+          current_time = pygame.time.get_ticks()
+          elapsed_time = current_time - self.last_updated_time[0]
+          if elapsed_time < self.effect_duration[0]:
+              self.poisoned()
+          else:
+              self.effect_applied[0] = 0
+              self.last_updated_time[0] = 0
+
+      # Draw bullet buff if active
+      self.draw_bullet_buff()
+
+  def trigger_effect(self, effect):
+    self.effect_applied[0] = 1
+    self.last_updated_time[0] = pygame.time.get_ticks()
 
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
-
 scene = Scenes()
+scene.effects.set_finn(scene.finn)
 running = True
 clock = pygame.time.Clock()
 running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
@@ -1336,7 +1370,6 @@ while running:
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
           running = False
-
       scene.mouse.get_input(event)
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
