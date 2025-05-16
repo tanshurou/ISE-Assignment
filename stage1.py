@@ -151,51 +151,63 @@ class LeaderBoard():
 
 class HealthBar():
   def __init__(self):
-    self.max_health = 12
-    self.current_health = 12
-    self.x = 290
-    self.y = 60
-    self.images = []
-    for i in range(1,4):
-      path = Path("assets") / "ui_elements" / f"heart{i}.png"
-      img = pygame.image.load(path)
-      img = resizeObject(img, 4)
-      self.images.append(img)
+      self.max_health = 12
+      self.current_health = 12
+      self.base_x = 290  # Base position (starting point)
+      self.y = 60
+      self.heart_spacing = 40  # Space between hearts
+      self.images = []
+      for i in range(1, 4):
+          path = Path("assets") / "ui_elements" / f"heart{i}.png"
+          img = pygame.image.load(path)
+          img = resizeObject(img, 4)
+          self.images.append(img)
 
-    sound_path = Path("assets") / "audio" / "take damage.mp3"
-    sound_path2 = Path("assets") / "audio" / "heal.mp3"
-    self.take_damage_sound_effect = pygame.mixer.Sound(sound_path)
-    self.take_damage_sound_effect.set_volume(1)
-    self.heal_sound_effect = pygame.mixer.Sound(sound_path2)
+      sound_path = Path("assets") / "audio" / "take damage.mp3"
+      sound_path2 = Path("assets") / "audio" / "heal.mp3"
+      self.take_damage_sound_effect = pygame.mixer.Sound(sound_path)
+      self.take_damage_sound_effect.set_volume(1)
+      self.heal_sound_effect = pygame.mixer.Sound(sound_path2)
 
   def draw(self):
-    num_of_full_hearts = self.current_health // 2
-    num_of_half_hearts = self.current_health % 2
-    num_of_empty_hearts = (self.max_health / 2) - num_of_full_hearts - num_of_half_hearts
+      # Ensure health is within bounds
+      self.current_health = max(0, min(self.current_health, self.max_health))
+      
+      # Calculate hearts
+      num_of_full_hearts = self.current_health // 2
+      num_of_half_hearts = self.current_health % 2
+      num_of_empty_hearts = int(self.max_health // 2) - num_of_full_hearts - num_of_half_hearts
+  
+      
+      # Reset x position at the start of drawing
+      current_x = self.base_x
+      
+      # Draw full hearts
+      for i in range(num_of_full_hearts):
+          screen.blit(self.images[0], (current_x, self.y))
+          current_x += self.heart_spacing
+      
+      # Draw half heart if needed
+      if num_of_half_hearts > 0:
+          screen.blit(self.images[1], (current_x, self.y))
+          current_x += self.heart_spacing
 
-    for i in range(num_of_full_hearts):
-      screen.blit(self.images[0], (self.x, self.y))
-      self.x += 40
-    
-    if num_of_half_hearts:
-      screen.blit(self.images[1], (self.x, self.y))
-      self.x += 40
-
-    for i in range(int(num_of_empty_hearts)):
-      screen.blit(self.images[2], (self.x, self.y))
-      self.x += 40
-
-    self.x = 290
+      # Draw empty hearts
+      for i in range(num_of_empty_hearts):
+          screen.blit(self.images[2], (current_x, self.y))
+          current_x += self.heart_spacing
 
   def takeDamage(self, amount):
-    if self.current_health > 0:
-      self.current_health -= amount
-    self.take_damage_sound_effect.play()
+      if self.current_health > 0:
+          self.current_health = max(0, self.current_health - amount)
+          self.take_damage_sound_effect.play()
 
   def heal(self, amount):
-    if self.current_health < self.max_health:
-      self.current_health += amount
-    self.heal_sound_effect.play()
+      if self.current_health < self.max_health:
+          self.current_health = min(self.max_health, self.current_health + amount)
+          self.heal_sound_effect.play()
+
+
 
 class StaminaBar():
   def __init__(self):
@@ -234,70 +246,160 @@ class StaminaBar():
 
 class InventoryBar():
   def __init__(self):
-    self.image = inventory_img
-    self.hover_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "hover.wav" )
-    self.clicked_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "click2.mp3")
-    self.pickup_sound_effect = self.clicked_sound_effect
-    self.slots = []
-    self.items = [None, None, None, None, None, None, None, None]
-    self.currently_hovering_slot = False
-    potionImages = Potions(0,0)
-    
-    for slot in range(7):
-      slot_rect = pygame.Rect(322 + (slot * 96), 590, 79, 79)
-      self.slots.append(slot_rect)
+      self.image = inventory_img
+      self.hover_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "hover.wav")
+      self.clicked_sound_effect = pygame.mixer.Sound(Path("assets") / "audio" / "click2.mp3")
+      self.pickup_sound_effect = self.clicked_sound_effect
+      self.slots = []
+      self.items = [None, None, None, None, None, None, None, None]
+      self.currently_hovering_slot = False
+      potionImages = Potions(0, 0)
 
-    self.potion_images = {i: potionImages.animation_list[i][0] for i in range(5)}
+      #use potion animation
+      paths = ["use_blue_potion.png", "use_purple_potion.png", "use_red_potion.png", "use_yellow_potion.png", "use_green_potion.png"]
+      
+      self.spritesheets = []
+      self.animation_list = []
+      self.animation_index = 0
+      self.last_update_time = pygame.time.get_ticks()
+      self.effect_active = False
+      self.current_effect_type = None  # Track which potion effect is active
+      self.effect_slot_index = None    # Track which slot the effect is appearing on
 
+      for effect in range(5):
+        spritesheet = pygame.image.load(Path("assets") / "character" / "Effects" / paths[effect])
+        placeholder = []
+        for frame in range(9):
+          img = getImage(spritesheet, frame, 64, 64, 2)
+          placeholder.append(img)
+
+        self.animation_list.append(placeholder)
+          
+
+      
+      # Create inventory slots
+      for slot in range(7):
+          slot_rect = pygame.Rect(322 + (slot * 96), 590, 79, 79)
+          self.slots.append(slot_rect)
+
+      # Store all animation frames for each potion type
+      self.potion_animations = potionImages.animation_list
+      
+      # Animation variables
+      self.current_frame = 0
+      self.animation_speed = 0.1  # Adjust for faster/slower animation
+      self.last_update = pygame.time.get_ticks()
+      self.frame_count = 8  # Total frames per potion (3 rows * 3 frames)
 
   def draw(self, coordinate_X, coordinate_y):
-    screen.blit(self.image, (coordinate_X, coordinate_y))
-    for slot_index in range(7):
-      if self.items[slot_index] != None:
-        screen.blit(self.potion_images[self.items[slot_index]], (self.slots[slot_index].x + 15, self.slots[slot_index].y +15))
+      screen.blit(self.image, (coordinate_X, coordinate_y))
+      # Draw potions in slots with current animation frame
+      for slot_index in range(7):
+          if self.items[slot_index] is not None:
+              potion_type = self.items[slot_index]
+              # Get current animation frame for this potion type
+              current_potion_frame = self.potion_animations[potion_type][self.current_frame]
+              
+              # Center the potion in the slot
+              screen.blit(current_potion_frame, 
+                          (self.slots[slot_index].x + (self.slots[slot_index].width - current_potion_frame.get_width()) // 2,
+                          self.slots[slot_index].y + (self.slots[slot_index].height - current_potion_frame.get_height()) // 2))
+      
+      # If an effect is active, draw the effect animation
+      if self.effect_active and self.current_effect_type is not None:
+          self.use_potion_animation()
 
+  def update_animation(self):
+      # Update animation frame based on time
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_update > 1000 * self.animation_speed:
+          self.last_update = current_time
+          self.current_frame = (self.current_frame + 1) % self.frame_count
+  
   def handle_hover(self):
-    mouse_pos = pygame.mouse.get_pos()
-    hovering_any_slot = False
-    currently_hovering_slot = None
-    
-    for slot_index, slot_rect in enumerate(self.slots):
-        if slot_rect.collidepoint(mouse_pos):
-            hovering_any_slot = True
-            currently_hovering_slot = slot_index
-            break
-    
-    # Play sound only when we hover over a NEW slot
-    if hovering_any_slot:
-        if self.currently_hovering_slot != currently_hovering_slot:
-            self.hover_sound_effect.play()
-            #print(f"Now hovering over slot {currently_hovering_slot}")
+      mouse_pos = pygame.mouse.get_pos()
+      hovering_any_slot = False
+      currently_hovering_slot = None
+      
+      for slot_index, slot_rect in enumerate(self.slots):
+          if slot_rect.collidepoint(mouse_pos):
+              hovering_any_slot = True
+              currently_hovering_slot = slot_index
+              break
+      
+      # Play sound only when we hover over a NEW slot
+      if hovering_any_slot:
+          if self.currently_hovering_slot != currently_hovering_slot:
+              self.hover_sound_effect.play()
+              #print(f"Now hovering over slot {currently_hovering_slot}")
 
-    self.currently_hovering_slot = currently_hovering_slot if hovering_any_slot else None
+      self.currently_hovering_slot = currently_hovering_slot if hovering_any_slot else None
 
   def handle_click(self, event):
-     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-      for slot_index, slot_rect in enumerate(self.slots):
-        if slot_rect.collidepoint(pygame.mouse.get_pos()) and self.items[slot_index] != None:
-            print("clicked")
-            self.clicked_sound_effect.play()
-            self.use_potion(slot_index)
+      if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+          for slot_index, slot_rect in enumerate(self.slots):
+              if slot_rect.collidepoint(pygame.mouse.get_pos()) and self.items[slot_index] is not None:
+                  self.clicked_sound_effect.play()
+                  self.use_potion(slot_index)
 
   def add_potion(self, potion_type):
-    for slot in range(len(self.slots)):
-      if self.items[slot] == None:
-        self.items[slot] = potion_type
-        self.pickup_sound_effect.play()
-        print(f"Added potion of type {potion_type} to slot {slot}")
-        return True
-      
-    print("inventory full")
-    return False
+      for slot in range(len(self.slots)):
+          if self.items[slot] is None:
+              self.items[slot] = potion_type
+              self.pickup_sound_effect.play()
+              return True
+          
+      print("inventory full")
+      return False
   
   def use_potion(self, item_index):
-     self.items[item_index] = None
-     print("used potion")
-     return True
+      # Store the potion type before removing it
+      potion_type = self.items[item_index]
+      self.items[item_index] = None
+      
+      # Set the current effect type and activate effect
+      self.current_effect_type = potion_type
+      self.effect_active = True
+      self.animation_index = 0  # Reset animation frame counter
+      self.last_update_time = pygame.time.get_ticks()  # Reset timer
+      self.effect_slot_index = item_index  # Store which slot the effect should appear in
+      
+      return True
+  
+  def use_potion_animation(self):
+      # Only proceed if an effect is active
+      if not self.effect_active or self.effect_slot_index is None:
+          return
+          
+      cooldown = 100  # Animation speed in milliseconds
+      current_time = pygame.time.get_ticks()
+      
+      # Update animation frame when cooldown has elapsed
+      if current_time - self.last_update_time > cooldown:
+          self.animation_index += 1
+          self.last_update_time = current_time
+          
+      # End animation after all frames have been shown
+      if self.animation_index >= 9:
+          self.effect_active = False
+          self.current_effect_type = None
+          self.effect_slot_index = None
+          return
+      
+      # Get the correct animation frame based on potion type and current index
+      if 0 <= self.current_effect_type < 5:  # Make sure it's a valid potion type
+          current_frame = self.animation_list[self.current_effect_type][self.animation_index]
+          
+          # Use the slot position for the effect
+          slot_rect = self.slots[self.effect_slot_index]
+          
+          # Draw the effect centered on the slot
+          x = slot_rect.x + (slot_rect.width - current_frame.get_width()) // 2
+          y = slot_rect.y + (slot_rect.height - current_frame.get_height()) // 2
+          
+          # Render the effect
+          screen.blit(current_frame, (x, y))
+        
      
   
 class Potions(pygame.sprite.Sprite):
@@ -548,8 +650,6 @@ class Scenes():
     self.scroll_speed = 3
     self.scrolled = 0
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
-    self.health = HealthBar()
-    self.stamina = StaminaBar()
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.dialogue = DialogueBox()
@@ -590,21 +690,22 @@ class Scenes():
     finn_img = pygame.image.load(finn_potrait_path)
     finn_img = resizeObject(finn_img, 0.4)
     screen.blit(finn_img, (61, 60))
-    self.health.draw()
-    self.stamina.draw()
-    self.fence.update(self.scroll_speed)  #spawn fences
+    self.finn.health_bar.draw()
+    self.finn.stamina_bar.draw()
+    self.fence.update(self.scroll_speed, self.finn)  #spawn fences
     self.distance.updateDistance(speed)   #track distance
+    self.inventory.update_animation()
     self.inventory.draw(308, 575)
     if spawn_mushroom:
       self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
     self.potion.update(speed)
     self.inventory.handle_hover()
     self.mouse.draw()    #DELETE LTR
-    self.potion.pick_up_potion(self.mouse)
+    self.potion.pick_up_potion(self.finn)
     self.finn.update
     self.finn.draw(screen)
-    #self.mushroom.hit(self.mouse)
-    self.mushroom.collide(self.mouse)
+    self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
+    self.mushroom.collide(self.finn)
     self.effects.apply_effects()
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
@@ -623,119 +724,191 @@ class Scenes():
 
 
 class Fence(pygame.sprite.Sprite):
-  def __init__(self, x, y):
-    super().__init__()
-    fence_path = Path("assets") / "stage_1_bg" / "2 Objects" / "2 Fence" / "8.png"
-    fence_img = pygame.image.load(fence_path)
-    fence_img = resizeObject(fence_img, 3)
-    self.image = fence_img 
-    self.fence_x = x
-    self.fence_y = y
-    self.rect = fence_img.get_rect(topleft = (self.fence_x,self.fence_y))
-    self.hit = False
+    def __init__(self, x, y):
+        super().__init__()
+        fence_path = Path("assets") / "stage_1_bg" / "2 Objects" / "2 Fence" / "8.png"
+        fence_img = pygame.image.load(fence_path)
+        fence_img = resizeObject(fence_img, 3)
+        self.image = fence_img 
+        self.original_image = self.image.copy()
+        self.fence_x = x
+        self.fence_y = y
+        self.rect = fence_img.get_rect(topleft=(self.fence_x, self.fence_y))
+        
+        # Blinking parameters
+        self.hit = False
+        self.blink_start_time = 0
+        self.blink_duration = 1000  # Total duration for all blinks (1 second)
+        self.blink_frequency = 100  # Time for one on/off cycle (100ms = 10 blinks per second)
+        self.blink_intensity = 255  # Full white (255, 255, 255)
 
-  def update(self, speed):
-    self.fence_x -= speed
-    self.rect.x = self.fence_x
-    pygame.draw.rect(screen, (255, 0, 0), self.rect, 3)  #test
+    def update(self, speed):
+        self.fence_x -= speed
+        self.rect.x = self.fence_x
 
-  def check_collision(self, fin_rect):
-        return self.rect.colliderect(fin_rect)
-  
+        current_time = pygame.time.get_ticks()
+
+        if self.hit and current_time - self.blink_start_time < self.blink_duration:
+            # Calculate if we're in an "on" phase of the blink cycle
+            # This creates a square wave pattern that alternates between TRUE and FALSE
+            blink_phase = ((current_time - self.blink_start_time) // (self.blink_frequency // 2)) % 2
+            
+            if blink_phase == 0:
+                # "ON" phase - Show white version
+                self.image = self.original_image.copy()
+                # Create a white surface with high opacity
+                white_surface = pygame.Surface(self.image.get_size()).convert_alpha()
+                white_surface.fill((255, 255, 255, 220))  # Almost solid white (220/255 opacity)
+                self.image.blit(white_surface, (0, 0))
+            else:
+                # "OFF" phase - Show original
+                self.image = self.original_image.copy()
+        else:
+            # Blinking complete or not blinking
+            self.image = self.original_image.copy()
+            self.hit = False  # Reset hit flag after blink is done
+        
+    def blink(self):
+        self.hit = True
+        self.blink_start_time = pygame.time.get_ticks()
+     
+        
   
 class Mushroom(pygame.sprite.Sprite):
-  def __init__(self, y, effect_manager):
-    super().__init__()
-    self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
-    self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
-    self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
-    spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
-                     pygame.image.load(self.attack_spritesheet).convert_alpha(), 
-                     pygame.image.load(self.die_spritesheet).convert_alpha()]
+    def __init__(self, y, effect_manager):
+        super().__init__()
+        self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
+        self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
+        self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
+        spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
+                         pygame.image.load(self.attack_spritesheet).convert_alpha(), 
+                         pygame.image.load(self.die_spritesheet).convert_alpha()]
+        
+        self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
+        self.animation_frames = [7,9,4]
+        self.animation_list = []
+        self.animation_index = [0,0,0,0,0]
+        self.explode_animation = []
+        self.poison_animation = []
+        self.last_update_time = 0
+        self.explode_animation_last_update_time = 0
+        self.collide_animation_update_time = 0
+        self.x = 1300
+        self.y = y
+        self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+        self.dead = False
+        self.collide = False
+        self.health = 2
+        self.special_effect = effect_manager
+        
+        # Blink effect variables
+        self.is_blinking = False
+        self.blink_duration = 500  # Total blinking time in milliseconds
+        self.blink_start_time = 0
+        self.blink_interval = 100  # Time between blink toggling in milliseconds
+        self.blink_visible = True  # Flag to toggle visibility during blinking
+        self.last_blink_toggle = 0
+        
+        for animation in range(len(spritesheets)):
+            placeholder = []
+            for frame in range(self.animation_frames[animation]):
+                img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
+                placeholder.append(img)
+                #screen.blit(img, (200,200))
+            self.animation_list.append(placeholder)
+        
+        explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
+        poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
+        explode_img = pygame.image.load(explode_path)
+        poison_img = pygame.image.load(poison_path)
+        
+        for frame in range(14):
+            img = getImage(explode_img, frame, 64, 64, 2.5)
+            img2 = getImage(poison_img, frame, 64, 64, 2.5)
+            self.explode_animation.append(img)
+            self.poison_animation.append(img2)
+
+    def take_damage(self, bullet_buff):
+        if bullet_buff == True:
+            self.health -= 2
+        else:
+            self.health -= 1
+        print(self.health)
+        
+        # Start blinking effect when taking damage
+        self.start_blinking()
+        
+        if self.health <= 0:
+            self.dead = True
     
-    self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
-    self.animation_frames = [7,9,4]
-    self.animation_list = []
-    self.animation_index = [0,0,0,0,0]
-    self.explode_animation = []
-    self.poison_animation = []
-    self.last_update_time = 0
-    self.explode_animation_last_update_time = 0
-    self.collide_animation_update_time = 0
-    self.x = 1300
-    self.y = y
-    self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
-    self.dead = False
-    self.collide = False
-    self.health = 2
-    self.special_effect = effect_manager
+    def start_blinking(self):
+        self.is_blinking = True
+        self.blink_start_time = pygame.time.get_ticks()
+        self.blink_visible = True
+        self.last_blink_toggle = self.blink_start_time
+    
+    def update_blinking(self):
+        if not self.is_blinking:
+            return True  # If not blinking, always visible
+        
+        current_time = pygame.time.get_ticks()
+        
+        # Check if blinking duration is over
+        if current_time - self.blink_start_time > self.blink_duration:
+            self.is_blinking = False
+            return True  # Blinking finished, sprite should be visible
+        
+        # Toggle visibility based on blink interval
+        if current_time - self.last_blink_toggle > self.blink_interval:
+            self.blink_visible = not self.blink_visible
+            self.last_blink_toggle = current_time
+        
+        return self.blink_visible  # Return current visibility state
 
-    for animation in range(len(spritesheets)):
-      placeholder = []
-      for frame in range(self.animation_frames[animation]):
-        img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
-        placeholder.append(img)
-        #screen.blit(img, (200,200))
-      self.animation_list.append(placeholder)
+    def animation(self, speed, action):
+        self.x -= speed
+        cooldown = 100  # Reduced cooldown for faster animation
+        
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_update_time > cooldown:
+            self.animation_index[action] += 1
+            self.last_update_time = current_time
+            if self.animation_index[action] >= self.animation_frames[action]:
+                self.animation_index[action] = 0
+        
+        self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+    
+        if self.dead == False and self.collide == False:
+            # Only draw if the sprite should be visible during blinking
+            if self.update_blinking():
+                screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
+                pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
 
-    explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
-    poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
-    explode_img = pygame.image.load(explode_path)
-    poison_img = pygame.image.load(poison_path)
-
-    for frame in range(14):
-      img = getImage(explode_img, frame, 64, 64, 2.5)
-      img2 = getImage(poison_img, frame, 64, 64, 2.5)
-      self.explode_animation.append(img)
-      self.poison_animation.append(img2)
-
-  def take_damage(self):
-     self.health -= 1
-     print(self.health)
-     if self.health <= 0:
+    def killed(self):
+        cooldown = 100
+        current_time = pygame.time.get_ticks()
         self.dead = True
+        
+        if current_time - self.explode_animation_last_update_time > cooldown:
+            self.animation_index[3] += 1
+            self.explode_animation_last_update_time = current_time
+        if self.animation_index[3] == 13:
+            self.kill()
+        screen.blit(self.explode_animation[self.animation_index[3]], (self.x-20, self.y-30))
 
-  def animation(self, speed, action):
-      self.x -= speed
-      cooldown = 100  # Reduced cooldown for faster animation
-      
-      current_time = pygame.time.get_ticks()
-      if current_time - self.last_update_time > cooldown:
-          self.animation_index[action] += 1
-          self.last_update_time = current_time
-          if self.animation_index[action] >= self.animation_frames[action]:
-              self.animation_index[action] = 0
-      
-      self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
-
-      if self.dead == False and self.collide == False:
-        screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
-        pygame.draw.rect(screen, (255, 0, 0), self.rect, 3) #test
-
-  def die(self):
-    cooldown = 100
-    current_time = pygame.time.get_ticks()
-    self.dead = True
-
-    if current_time - self.explode_animation_last_update_time > cooldown:
-       self.animation_index[3] += 1
-       self.explode_animation_last_update_time = current_time
-       if self.animation_index[3] == 13:
-        self.kill()
-    screen.blit(self.explode_animation[self.animation_index[3]], (self.x-20, self.y-30))
-
-  def poison(self):
-    cooldown = 100
-    current_time = pygame.time.get_ticks()
-    self.collide = True
-
-    if current_time - self.collide_animation_update_time > cooldown:
-      self.animation_index[4] += 1
-      self.collide_animation_update_time = current_time
-      if self.animation_index[4] == 13:
-        self.special_effect.trigger_effect(0)
-        self.kill()
-    screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
+    def poison(self):
+        cooldown = 100
+        current_time = pygame.time.get_ticks()
+        self.collide = True
+        
+        if current_time - self.collide_animation_update_time > cooldown and self.dead == False:
+            self.animation_index[4] += 1
+            self.collide_animation_update_time = current_time
+            self.special_effect.trigger_effect(0)
+        if self.animation_index[4] == 13:
+            self.kill()
+            print("poisoned")
+        screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
      
 
      
@@ -770,6 +943,7 @@ class MushroomManager:
     self.fence_group = fence_group
     self.potion_group = potion_group
     self.effect_manager = effect_manager
+    self.last_collide = 0
 
   def spawn(self):
     new_mushroom = Mushroom(random.choice(self.y_positions), self.effect_manager)
@@ -793,22 +967,26 @@ class MushroomManager:
     for mushroom in self.mushroom_group:
       mushroom.animation(scroll_speed, 0)
       if mushroom.dead == True:
-         mushroom.die()
+         mushroom.killed()
       if mushroom.collide == True:
          mushroom.poison()
       if mushroom.x < -100:
          mushroom.kill()
 
-  def hit(self, bullet):
+  def hit(self, bullet, bullet_buff):
     for mushroom in self.mushroom_group:
       if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(bullet), True):
-        mushroom.take_damage()
+        mushroom.take_damage(bullet_buff)
 
   def collide(self, finn):
+    current_time = pygame.time.get_ticks()
     for mushroom in self.mushroom_group:
-      if pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), True):
+      # Only check collision if the mushroom is alive (not dead or in death animation)
+      if not mushroom.dead and not mushroom.collide and pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), False):
         mushroom.collide = True
-  
+        if current_time - self.last_collide > 100:
+           self.last_collide = current_time
+           finn.health_bar.takeDamage(3)
 
       
 
@@ -822,6 +1000,7 @@ class FenceManager:
     self.max_time = int(3500/scroll_speed)
     self.spawn_interval = random.randint(self.min_time, self.max_time)
     self.y_positions = [265,365,465]
+    self.last_collision = 0
 
   def spawn_fence(self):
     y = random.choice(self.y_positions)
@@ -830,7 +1009,7 @@ class FenceManager:
     self.fence_group.add(fence)
 
 
-  def update(self, scroll_speed):
+  def update(self, scroll_speed, finn):
     current_time = pygame.time.get_ticks()
     
     if current_time - self.last_fence_time > self.spawn_interval:
@@ -842,6 +1021,10 @@ class FenceManager:
       fence.update(scroll_speed)
       if fence.fence_x < -50:
         fence.kill()
+      if pygame.sprite.spritecollide(fence, pygame.sprite.Group(finn), False) and current_time - self.last_collision > 500:
+         self.last_collision = current_time
+         finn.health_bar.takeDamage(2)
+         fence.blink()
 
     self.fence_group.draw(screen) 
 
@@ -894,7 +1077,7 @@ class Finn(pygame.sprite.Sprite):
 
     # Bullet Setup
     self.bullet_group = pygame.sprite.Group()
-    self.BULLET_SPEED = int(7 * self.scale) 
+    self.BULLET_SPEED = int(10 * self.scale) 
     self.bullet_path = Path("assets") / "character" / "Bullet_animation.png"
 
     # Lane Setup
@@ -904,11 +1087,15 @@ class Finn(pygame.sprite.Sprite):
 
     # Health bar and stamina bar setup
     self.speed = 5 * self.scale
-    self.health_bar = health_bar
-    self.stamina_bar = stamina_bar
+    self.health_bar = HealthBar()
+    self.stamina_bar = StaminaBar()
     self.last_shoot_time = 0
-    self.shoot_cooldown = 1500
+    self.shoot_cooldown = 500
     self.set_finn_action(0)
+
+    # Buffs
+    self.bullet_buff = False
+    self.speed_buff = False
 
   def load_frames(self, animation_steps):
     step_counter = 0
@@ -997,6 +1184,8 @@ class Finn(pygame.sprite.Sprite):
     bullet_y = self.pos[1] + int(25 * self.scale)
     new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
     self.bullet_group.add(new_bullet)
+    
+
 
 class Bullet(pygame.sprite.Sprite):
   def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5):
@@ -1020,6 +1209,7 @@ class Bullet(pygame.sprite.Sprite):
       self.rect = self.image.get_rect(topleft=(x, y))
       self.speed = speed
       self.update_collision_rect()
+
 
   def update_collision_rect(self):
       width = int(self.rect.width * self.collision_scale)
@@ -1096,19 +1286,19 @@ class EffectManager():
       screen.blit(overlay, (0, 0))
 
   def apply_effects(self):
-      if self.effect_applied[0] == 1:
-          current_time = pygame.time.get_ticks()
-          elapsed_time = current_time - self.last_updated_time[0]
-          
-          if elapsed_time < self.effect_duration[0]:
-              self.poisoned()
-          else:
-              # Fixed: Use = for assignment, not == for comparison
-              print("Effect duration expired, resetting")
-              self.effect_applied[0] = 0
-              # Fixed: Use = for assignment, not == for comparison
-              # Also, make sure to index the list properly
-              self.last_updated_time[0] = 0
+    if self.effect_applied[0] == 1:
+        current_time = pygame.time.get_ticks()
+        elapsed_time = current_time - self.last_updated_time[0]
+        
+        if elapsed_time < self.effect_duration[0]:
+            self.poisoned()
+        else:
+            # Fixed: Use = for assignment, not == for comparison
+            print("Effect duration expired, resetting")
+            self.effect_applied[0] = 0
+            # Fixed: Use = for assignment, not == for comparison
+            # Also, make sure to index the list properly
+            self.last_updated_time[0] = 0
     
       
       
@@ -1130,6 +1320,7 @@ while running:
   clock.tick(FPS)
   scene.emptyBg(10)
   scene.level1(10, True, 2)
+  scene.finn.update()
 
   for event in pygame.event.get():
       if event.type == pygame.QUIT:
@@ -1138,11 +1329,8 @@ while running:
       scene.mouse.get_input(event)
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
+      scene.finn.handle_input(event)
       
-  scene.finn.update()
-  scene.finn.draw(screen)
-  test = Mushroom(100) 
   pygame.display.update()
-
 
 pygame.quit()
