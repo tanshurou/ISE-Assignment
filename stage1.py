@@ -499,7 +499,7 @@ class PotionManager:
 
   def pick_up_potion(self, finn):
     for potion in self.potion_group:
-      if pygame.sprite.spritecollide(potion, pygame.sprite.Group(finn), True):
+      if potion.rect.colliderect(finn.hitbox):
         self.inventory.add_potion(potion.potion_type)
         potion.kill()
 
@@ -982,7 +982,7 @@ class MushroomManager:
     current_time = pygame.time.get_ticks()
     for mushroom in self.mushroom_group:
       # Only check collision if the mushroom is alive (not dead or in death animation)
-      if not mushroom.dead and not mushroom.collide and pygame.sprite.spritecollide(mushroom, pygame.sprite.Group(finn), False):
+      if not mushroom.dead and not mushroom.collide and mushroom.rect.colliderect(finn.hitbox):
         mushroom.collide = True
         if current_time - self.last_collide > 100:
            self.last_collide = current_time
@@ -1021,7 +1021,7 @@ class FenceManager:
       fence.update(scroll_speed)
       if fence.fence_x < -50:
         fence.kill()
-      if pygame.sprite.spritecollide(fence, pygame.sprite.Group(finn), False) and current_time - self.last_collision > 500:
+      if fence.rect.colliderect(finn.hitbox) and current_time - self.last_collision > 500:
          self.last_collision = current_time
          finn.health_bar.takeDamage(2)
          fence.blink()
@@ -1062,8 +1062,15 @@ class Finn(pygame.sprite.Sprite):
     self.last_update = pygame.time.get_ticks() - self.cooldown - 1
     self.load_frames([10, 10, 8])
     self.image = self.animation_list[self.finn_action][self.frame]
-    self.rect = self.image.get_rect(topleft=(x, y))
     self.pos = [x, y]
+    self.rect = self.image.get_rect(topleft=(x, y))  # Only for image blit
+
+    # Customizable collision box
+    self.hitbox_offset_x = 20
+    self.hitbox_offset_y = 55
+    self.hitbox_width = 50
+    self.hitbox_height = 20
+    self.update_hitbox()
 
     # Finn Jumping Mechanic
     self.is_jumping = False
@@ -1094,8 +1101,11 @@ class Finn(pygame.sprite.Sprite):
     self.set_finn_action(0)
 
     # Buffs
-    self.bullet_buff = False
+    self.health_buff = False
+    self.stamina_buff = False
     self.speed_buff = False
+    self.invicible_buff = False
+    self.bullet_buff = False
 
   def load_frames(self, animation_steps):
     step_counter = 0
@@ -1107,6 +1117,8 @@ class Finn(pygame.sprite.Sprite):
             step_counter += 1
         self.animation_list.append(temp_list)
 
+  def update_hitbox(self):
+    self.hitbox = pygame.Rect(self.pos[0] + self.hitbox_offset_x, self.pos[1] + self.hitbox_offset_y, self.hitbox_width, self.hitbox_height)
 
   def update(self):
     now = pygame.time.get_ticks()
@@ -1118,6 +1130,7 @@ class Finn(pygame.sprite.Sprite):
 
     self.image = self.animation_list[self.finn_action][self.frame]
     self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
+    self.update_hitbox()
 
     # Jumping Mechanics
     if not self.is_jumping:
@@ -1147,7 +1160,7 @@ class Finn(pygame.sprite.Sprite):
 
   def draw(self, screen):
     screen.blit(self.image, self.rect.topleft)
-    pygame.draw.rect(screen, (255, 0, 0), self.rect, 2)
+    pygame.draw.rect(screen, (255, 0, 0), self.hitbox, 2)
     for bullet in self.bullet_group:
         bullet.draw(screen)
 
@@ -1184,8 +1197,6 @@ class Finn(pygame.sprite.Sprite):
     bullet_y = self.pos[1] + int(25 * self.scale)
     new_bullet = Bullet(bullet_x, bullet_y, str(self.bullet_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale)
     self.bullet_group.add(new_bullet)
-    
-
 
 class Bullet(pygame.sprite.Sprite):
   def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5):
@@ -1247,7 +1258,7 @@ class Bullet(pygame.sprite.Sprite):
 class EffectManager():
   def __init__(self):
       self.start_time = [0]
-      self.effect_duration = [3000]
+      self.effect_duration = [1000]
       self.last_updated_time = [0]
       self.effect_applied = [0]
 
