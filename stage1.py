@@ -1003,6 +1003,7 @@ class FenceManager:
     self.spawn_interval = random.randint(self.min_time, self.max_time)
     self.y_positions = [265,365,465]
     self.last_collision = 0
+    self.fence_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Fence Broke Sound Effect.mp3")
 
   def spawn_fence(self):
     y = random.choice(self.y_positions)
@@ -1033,6 +1034,7 @@ class FenceManager:
     for fence in self.fence_group:
         for bullet in bullets:
             if fence.rect.colliderect(bullet.rect) and bullet_buff:
+                self.fence_sound.play()
                 fence.kill()
                 bullets.remove(bullet)
                 break 
@@ -1293,9 +1295,10 @@ class EffectManager():
                 "path": Path("assets") / "character" / "Effects" / "green_potion.png", "scale": 2, "frame_count": 10,
                 "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup},
 
-            "speed_boost": {"active": False, "start_time": 0, "duration": 5000, "cooldown": 100, "frames": [], "index": 0,
-                "path": Path("assets") / "character" / "Effects" / "blue_potion.png", "scale": 3, "frame_count": 10,
-                "frame_size": (64, 64), "action": self.enable_speed_boost, "cleanup": self.disable_speed_boost},
+            "speed_boost": {
+                "active": False, "start_time": 0, "duration": 5000, "cooldown": 100, "frames": [], "index": 0,
+                "path": Path("assets") / "character" / "Effects" / "blue_potion.png", "scale": 3, "frame_count": 10, 
+                "frame_size": (64, 64), "action": self.enable_blue_buff, "cleanup": self.disable_blue_buff},
 
             "defense_boost": {"active": False, "start_time": 0, "duration": 3000, "cooldown": 100, "frames": [], "index": 0,
                 "path": Path("assets") / "character" / "Effects" / "yellow_potion.png", "scale": 3, "frame_count": 10,
@@ -1312,12 +1315,17 @@ class EffectManager():
     self.finn_ref = finn
 
   def trigger_effect(self, effect_key):
-    effect = self.effects.get(effect_key)
-    if effect and not effect["active"]:
-        effect["active"] = True
-        effect["start_time"] = pygame.time.get_ticks()
-        effect["index"] = 0
-        effect["action"]()
+      for key, effect in self.effects.items():
+          if key != "poisoned" and effect["active"]:
+              effect["active"] = False
+              effect["cleanup"]()
+
+      effect = self.effects.get(effect_key)
+      if effect:
+          effect["active"] = True
+          effect["start_time"] = pygame.time.get_ticks()
+          effect["index"] = 0
+          effect["action"]()
 
   def poisoned(self):
     time_ms = pygame.time.get_ticks()
@@ -1387,11 +1395,13 @@ class EffectManager():
   def apply_stamina(self):
     self.finn_ref.stamina_bar.increaseStamina(3)
 
-  def enable_speed_boost(self):
-    self.finn_ref.speed *= 1.5
+  def enable_blue_buff(self):
+      self.finn_ref.speed *= 1.5
+      self.finn_ref.invincible_buff = True
 
-  def disable_speed_boost(self):
-      self.finn_ref.speed /= 1.5 
+  def disable_blue_buff(self):
+      self.finn_ref.speed /= 1.5
+      self.finn_ref.invincible_buff = False
   
   def enable_defense_boost(self):
       self.finn_ref.invincible_buff = True
