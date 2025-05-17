@@ -198,6 +198,8 @@ class HealthBar():
           current_x += self.heart_spacing
 
   def takeDamage(self, amount):
+      if scene.finn.invincible_buff:
+          return
       if self.current_health > 0:
           self.current_health = max(0, self.current_health - amount)
           self.take_damage_sound_effect.play()
@@ -363,12 +365,16 @@ class InventoryBar():
       self.effect_slot_index = item_index
 
       # === Trigger EffectManager Logic ===
-      if potion_type == 2:  # Red potion
-          scene.effects.trigger_effect("heal")
-      elif potion_type == 4:  # Green potion
-          scene.effects.trigger_effect("stamina")
+      if potion_type == 0:  # Blue potion
+          scene.effects.trigger_effect("speed_boost")
       elif potion_type == 1:  # Purple potion
           scene.effects.trigger_effect("bullet_buff")
+      elif potion_type == 2:  # Red potion
+          scene.effects.trigger_effect("heal")
+      elif potion_type == 3:  # Yellow potion
+          scene.effects.trigger_effect("defense_boost")
+      elif potion_type == 4:  # Green potion
+          scene.effects.trigger_effect("stamina")
 
       return True
   
@@ -979,13 +985,15 @@ class MushroomManager:
     current_time = pygame.time.get_ticks()
     for mushroom in self.mushroom_group:
       # Only check collision if the mushroom is alive (not dead or in death animation)
-      if not mushroom.dead and not mushroom.collide and mushroom.rect.colliderect(finn.hitbox):
-        mushroom.collide = True
-        if current_time - self.last_collide > 100:
-           self.last_collide = current_time
-           finn.health_bar.takeDamage(3)
+      if not mushroom.dead and mushroom.rect.colliderect(finn.hitbox):
+          if finn.invincible_buff:
+              mushroom.dead = True  # kill mushroom on contact
+          elif not mushroom.collide:
+              mushroom.collide = True
+              if current_time - self.last_collide > 100:
+                  self.last_collide = current_time
+                  finn.health_bar.takeDamage(3)
       
-
 class FenceManager:
   def __init__(self, scroll_speed):
     self.fence_group = pygame.sprite.Group()
@@ -1001,7 +1009,6 @@ class FenceManager:
     x = 1300
     fence = Fence(x,y)
     self.fence_group.add(fence)
-
 
   def update(self, scroll_speed, finn):
     current_time = pygame.time.get_ticks()
@@ -1106,7 +1113,7 @@ class Finn(pygame.sprite.Sprite):
     self.health_buff = False
     self.stamina_buff = False
     self.speed_buff = False
-    self.invicible_buff = False
+    self.invincible_buff = False
     self.bullet_buff = False
 
   def load_frames(self, animation_steps):
@@ -1284,8 +1291,15 @@ class EffectManager():
             
             "stamina": {"active": False, "start_time": 0, "duration": 2000, "cooldown": 120, "frames": [], "index": 0,
                 "path": Path("assets") / "character" / "Effects" / "green_potion.png", "scale": 2, "frame_count": 10,
-                "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup}
-        }
+                "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup},
+
+            "speed_boost": {"active": False, "start_time": 0, "duration": 5000, "cooldown": 100, "frames": [], "index": 0,
+                "path": Path("assets") / "character" / "Effects" / "blue_potion.png", "scale": 3, "frame_count": 10,
+                "frame_size": (64, 64), "action": self.enable_speed_boost, "cleanup": self.disable_speed_boost},
+
+            "defense_boost": {"active": False, "start_time": 0, "duration": 3000, "cooldown": 100, "frames": [], "index": 0,
+                "path": Path("assets") / "character" / "Effects" / "yellow_potion.png", "scale": 3, "frame_count": 10,
+                "frame_size": (64, 64), "action": self.enable_defense_boost, "cleanup": self.disable_defense_boost}}
 
     # Load frames
     for key, effect in self.effects.items():
@@ -1368,11 +1382,22 @@ class EffectManager():
       self.finn_ref.bullet_buff = False
 
   def apply_heal(self):
-      self.finn_ref.health_bar.heal(3)
+      self.finn_ref.health_bar.heal(6)
 
   def apply_stamina(self):
     self.finn_ref.stamina_bar.increaseStamina(3)
 
+  def enable_speed_boost(self):
+    self.finn_ref.speed *= 1.5
+
+  def disable_speed_boost(self):
+      self.finn_ref.speed /= 1.5 
+  
+  def enable_defense_boost(self):
+      self.finn_ref.invincible_buff = True
+
+  def disable_defense_boost(self):
+      self.finn_ref.invincible_buff = False
 
 health_bar = HealthBar()
 stamina_bar = StaminaBar()
