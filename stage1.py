@@ -363,8 +363,12 @@ class InventoryBar():
       self.effect_slot_index = item_index
 
       # === Trigger EffectManager Logic ===
-      if potion_type == 1:  # Purple potion
-          scene.effects.trigger_bullet_buff()
+      if potion_type == 2:  # Red potion
+          scene.effects.trigger_effect("heal")
+      elif potion_type == 4:  # Green potion
+          scene.effects.trigger_effect("stamina")
+      elif potion_type == 1:  # Purple potion
+          scene.effects.trigger_effect("bullet_buff")
 
       return True
   
@@ -833,7 +837,6 @@ class Mushroom(pygame.sprite.Sprite):
           self.health -= 2
       else:
           self.health -= 1
-      print(self.health)
       
       # Start blinking effect when taking damage
       self.start_blinking()
@@ -903,7 +906,7 @@ class Mushroom(pygame.sprite.Sprite):
       if current_time - self.collide_animation_update_time > cooldown and self.dead == False:
           self.animation_index[4] += 1
           self.collide_animation_update_time = current_time
-          self.special_effect.trigger_effect(0)
+          self.special_effect.trigger_poison()
       if self.animation_index[4] == 13:
           self.kill()
           print("poisoned")
@@ -1260,94 +1263,115 @@ class Bullet(pygame.sprite.Sprite):
 
 class EffectManager():
   def __init__(self):
-      self.start_time = [0]
-      self.effect_duration = [1000]
-      self.last_updated_time = [0]
-      self.effect_applied = [0]
+    # ---- Buff Setup and Poison----
+    self.effects = {
+            "poisoned": {
+                "active": False,"start_time": 0,"duration": 1000,"cooldown": 0,
+                "frames": [],"index": 0,"path": None,"scale": 0,"frame_count": 0,
+                "frame_size": (0, 0),"action": self.no_action,"cleanup": self.no_cleanup},
 
-      # ---- Bullet Buff Setup ----
-      self.bullet_buff_frames = []
-      buff_effect_path = Path("assets") / "character" / "Effects" / "purple_potion.png"
-      buff_sheet = pygame.image.load(buff_effect_path)
+            "bullet_buff": {
+                "active": False, "start_time": 0,"duration": 5000,"cooldown": 150, "frames": [],"index": 0,
+                "path": Path("assets") / "character" / "Effects" / "purple_potion.png", "scale": 4, "frame_count": 10,
+                "frame_size": (64, 64), "action": self.enable_bullet_buff,
+                "cleanup": self.disable_bullet_buff},
 
-      for i in range(10):
-          frame = getImage(buff_sheet, i, 64, 64, 4)
-          self.bullet_buff_frames.append(frame) 
+            "heal": {
+                "active": False,"start_time": 0,"duration": 2250,"cooldown": 100,"frames": [],"index": 0,
+                "path": Path("assets") / "character" / "Effects" / "red_potion.png","scale": 3,"frame_count": 10,
+                "frame_size": (64, 64),"action": self.apply_heal,
+                "cleanup": self.no_cleanup},
+            
+            "stamina": {"active": False, "start_time": 0, "duration": 2000, "cooldown": 120, "frames": [], "index": 0,
+                "path": Path("assets") / "character" / "Effects" / "green_potion.png", "scale": 2, "frame_count": 10,
+                "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup}
+        }
 
-      self.bullet_buff_active = False
-      self.bullet_buff_start_time = 0
-      self.bullet_buff_duration = 5000
-      self.bullet_buff_index = 0
-      self.bullet_buff_last_update = 0
-      self.bullet_buff_cooldown = 150
-      self.finn_ref = None
+    # Load frames
+    for key, effect in self.effects.items():
+        if effect["path"] and effect["frame_count"] > 0:
+            sheet = pygame.image.load(effect["path"]).convert_alpha()
+            frames = [getImage(sheet, i, *effect["frame_size"], effect["scale"]) for i in range(effect["frame_count"])]
+            effect["frames"] = frames
 
   def set_finn(self, finn):
-      self.finn_ref = finn
+    self.finn_ref = finn
 
-  def trigger_bullet_buff(self):
-      if self.finn_ref:
-          self.bullet_buff_active = True
-          self.bullet_buff_start_time = pygame.time.get_ticks()
-          self.bullet_buff_index = 0
-          self.bullet_buff_last_update = 0
-          self.finn_ref.bullet_buff = True  # Activate Finn's bullet buff
-
-  def draw_bullet_buff(self):
-      if not self.bullet_buff_active or not self.finn_ref:
-          return
-
-      # Handle duration
-      now = pygame.time.get_ticks()
-      if now - self.bullet_buff_start_time > self.bullet_buff_duration:
-          self.bullet_buff_active = False
-          self.finn_ref.bullet_buff = False  # Reset Finn's state
-          return
-
-      # Handle animation
-      if now - self.bullet_buff_last_update > self.bullet_buff_cooldown:
-          self.bullet_buff_index = (self.bullet_buff_index + 1) % len(self.bullet_buff_frames)
-          self.bullet_buff_last_update = now
-
-      effect_img = self.bullet_buff_frames[self.bullet_buff_index]
-
-      # Center the effect around Finn
-      x = self.finn_ref.rect.centerx - effect_img.get_width() // 2
-      y = self.finn_ref.rect.centery - effect_img.get_height() // 2
-
-      screen.blit(effect_img, (x, y))
+  def trigger_effect(self, effect_key):
+    effect = self.effects.get(effect_key)
+    if effect and not effect["active"]:
+        effect["active"] = True
+        effect["start_time"] = pygame.time.get_ticks()
+        effect["index"] = 0
+        effect["action"]()
 
   def poisoned(self):
-      time_ms = pygame.time.get_ticks()
-      temp = screen.copy()
-      angle = math.sin(time_ms / 200) * 3
-      scale = 1 + math.sin(time_ms / 300) * 0.02
-      new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
-      temp = pygame.transform.smoothscale(temp, new_size)
-      temp = pygame.transform.rotate(temp, angle)
-      rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
-      screen.fill((0, 0, 0))
-      screen.blit(temp, rect.topleft)
-      overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-      overlay.fill((0, 255, 0, 80))
-      screen.blit(overlay, (0, 0))
+    time_ms = pygame.time.get_ticks()
+    temp = screen.copy()
+    angle = math.sin(time_ms / 200) * 3
+    scale = 1 + math.sin(time_ms / 300) * 0.02
+    new_size = (int(screen.get_width() * scale), int(screen.get_height() * scale))
+    temp = pygame.transform.smoothscale(temp, new_size)
+    temp = pygame.transform.rotate(temp, angle)
+    rect = temp.get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
+    screen.fill((0, 0, 0))
+    screen.blit(temp, rect.topleft)
+    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    overlay.fill((0, 255, 0, 80))
+    screen.blit(overlay, (0, 0))
 
   def apply_effects(self):
-      if self.effect_applied[0] == 1:
-          current_time = pygame.time.get_ticks()
-          elapsed_time = current_time - self.last_updated_time[0]
-          if elapsed_time < self.effect_duration[0]:
-              self.poisoned()
-          else:
-              self.effect_applied[0] = 0
-              self.last_updated_time[0] = 0
+      for key, effect in self.effects.items():
+          if effect["active"]:
+              now = pygame.time.get_ticks()
+              elapsed = now - effect["start_time"]
+              if elapsed > effect["duration"]:
+                  effect["active"] = False
+                  effect["cleanup"]()
+                  continue
 
-      # Draw bullet buff if active
-      self.draw_bullet_buff()
+              if key == "poisoned":
+                  self.poisoned()
+                  continue
+              
+              if not effect["frames"]:
+                  continue
 
-  def trigger_effect(self, effect):
-    self.effect_applied[0] = 1
-    self.last_updated_time[0] = pygame.time.get_ticks()
+              # Update animation frame
+              if now - effect.get("last_update", 0) > effect["cooldown"]:
+                  effect["index"] = (effect["index"] + 1) % len(effect["frames"])
+                  effect["last_update"] = now
+
+              # Draw at Finn's center
+              if self.finn_ref:
+                  frame = effect["frames"][effect["index"]]
+                  x = self.finn_ref.rect.centerx - frame.get_width() // 2
+                  y = self.finn_ref.rect.centery - frame.get_height() // 2
+                  screen.blit(frame, (x, y))
+
+  def trigger_poison(self):
+      poison = self.effects["poisoned"]
+      poison["active"] = True
+      poison["start_time"] = pygame.time.get_ticks()
+
+  # === Action and Cleanup Functions ===
+  def no_action(self):
+      pass
+
+  def no_cleanup(self):
+      pass
+
+  def enable_bullet_buff(self):
+      self.finn_ref.bullet_buff = True
+
+  def disable_bullet_buff(self):
+      self.finn_ref.bullet_buff = False
+
+  def apply_heal(self):
+      self.finn_ref.health_bar.heal(3)
+
+  def apply_stamina(self):
+    self.finn_ref.stamina_bar.increaseStamina(3)
 
 
 health_bar = HealthBar()
