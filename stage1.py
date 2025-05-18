@@ -669,11 +669,16 @@ class Scenes():
 
     self.clock = pygame.time.Clock()
     self.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
-    self.running_sound.play()
+    self.running_sound.play(loops=-1)
     self.game_finished = False
+    self.game_over = False
+    self.paused = False
 
     self.timer_start = pygame.time.get_ticks()
     self.elapsed_time = 0
+    self.timer_active = True
+    self.pause_start_time = 0
+    self.total_paused_time = 0
     self.timer_font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 24)
     
     # Step 1: Create all manager objects without dependencies first
@@ -706,6 +711,8 @@ class Scenes():
       self.game_finished = True
       self.timer_active = True
       self.timer_start = pygame.time.get_ticks()
+      self.timer_active = False
+      self.running_sound.stop()
       if self.game_finished:
           if self.leaderboard.accepting_username:
               self.leaderboard.get_username()
@@ -716,7 +723,7 @@ class Scenes():
               self.leaderboard.show_leaderboard()
 
     #finn potrait
-    if not self.game_finished:
+    if not self.game_over and not self.game_finished:
       finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
       finn_img = pygame.image.load(finn_potrait_path)
       finn_img = resizeObject(finn_img, 0.4)
@@ -735,6 +742,11 @@ class Scenes():
       self.potion.pick_up_potion(self.finn)
       self.finn.update
       self.finn.draw(screen)
+
+      if self.finn.health_bar.current_health <= 0:
+          self.game_over = True
+          self.timer_active = False
+
       self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
       self.mushroom.collide(self.finn)
       self.effects.apply_effects()
@@ -747,25 +759,30 @@ class Scenes():
           target_scroll_speed = self.finn.base_speed * 2
       else:
           target_scroll_speed = self.finn.base_speed
-
       self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.01
 
-
-    else:
+    # Game Finished 
+    if self.game_finished and not self.game_over:
       finish_text = self.timer_font.render("FINISH!", True, brown)
-      screen.blit(finish_text, (SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 - 30))
+      screen.blit(finish_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 30))
+    
+    # Player Died
+    if self.game_over and not self.game_finished:
+        font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 40)
+        game_over_text = font.render("GAME OVER", True, (255, 0, 0))
+        restart_text = font.render("Press R to Restart", True, (255, 255, 255))
+        self.timer_active = False
+        self.running_sound.stop()
 
-      if not hasattr(self, 'score_saved'):
-        self.elapsed_time = pygame.time.get_ticks() - self.timer_start
-        seconds = self.elapsed_time // 1000
-        scene.leaderboard.accepting_username = True
-        scene.leaderboard.done_accepting_username = False
-        scene.leaderboard.username = "" 
-        scene.leaderboard.final_time = str(seconds)
-        self.score_saved = True
+        game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
+
+        screen.blit(game_over_text, game_over_rect)
+        screen.blit(restart_text, restart_rect)
 
     # === STOPWATCH DISPLAY ===
-    self.elapsed_time = pygame.time.get_ticks() - self.timer_start
+    if self.timer_active:
+      self.elapsed_time = pygame.time.get_ticks() - self.timer_start - self.total_paused_time
     seconds = self.elapsed_time // 1000
     minutes = seconds // 60
     remaining_seconds = seconds % 60
@@ -1546,22 +1563,51 @@ running = True
 while running:
   pygame.mouse.set_visible(False)
   clock.tick(FPS)
-  scroll_speed = min(scene.finn.speed, 15)
-  scene.emptyBg(scroll_speed)
-  scene.level1(scroll_speed, True, 2)
-  scene.finn.update()
 
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       running = False
+
+    # Pause Game By Using ESC to Stop Everything
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+        scene.paused = not scene.paused
+        if scene.paused:
+            scene.pause_start_time = pygame.time.get_ticks()
+            scene.timer_active = False
+            pygame.mixer.pause()
+        else:
+            paused_duration = pygame.time.get_ticks() - scene.pause_start_time
+            scene.total_paused_time += paused_duration
+            scene.timer_active = True
+            pygame.mixer.unpause()
+
     scene.mouse.get_input(event)
+
+    if scene.paused:
+      continue
+
     if scene.game_finished:
       scene.leaderboard.get_input(event)
+
     if not scene.game_finished:
       scene.dialogue.handle_input(event)
       scene.inventory.handle_click(event)
       scene.finn.handle_input(event)
-      
+
+    if scene.game_over:
+      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+        scene = Scenes()
+        continue
+
+  if not scene.paused:
+    scroll_speed = min(scene.finn.speed, 15)
+    scene.emptyBg(scroll_speed)
+    scene.level1(scroll_speed, True, 2)
+    scene.finn.update()
+  else:
+    pause_text = large_font.render("PAUSED", True, brown)
+    screen.blit(pause_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
+
   pygame.display.update()
 
 pygame.quit()
