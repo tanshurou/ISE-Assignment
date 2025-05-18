@@ -654,7 +654,7 @@ class Scenes():
     self.scroll_speed = 3
     self.scrolled = 0
     self.speed_milestone = 300
-    self.max_base_speed = 15
+    self.max_base_speed = 8
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
@@ -714,13 +714,10 @@ class Scenes():
       self.timer_active = False
       self.running_sound.stop()
       if self.game_finished:
-          if self.leaderboard.accepting_username:
-              self.leaderboard.get_username()
-          elif self.leaderboard.done_accepting_username:
-              self.leaderboard.save_score(self.leaderboard.final_time)
-              self.leaderboard.load_file()
-              self.leaderboard.sort()
-              self.leaderboard.show_leaderboard()
+        self.leaderboard.get_username()
+        self.leaderboard.load_file()
+        self.leaderboard.sort()
+        self.leaderboard.show_leaderboard()
 
     #finn potrait
     if not self.game_over and not self.game_finished:
@@ -1558,7 +1555,6 @@ class EffectManager():
 
 scene = Scenes()
 running = True
-
 #start
 while running:
   pygame.mouse.set_visible(False)
