@@ -333,8 +333,6 @@ class InventoryBar():
       if hovering_any_slot:
           if self.currently_hovering_slot != currently_hovering_slot:
               self.hover_sound_effect.play()
-              #print(f"Now hovering over slot {currently_hovering_slot}")
-
       self.currently_hovering_slot = currently_hovering_slot if hovering_any_slot else None
 
   def handle_click(self, event):
@@ -350,8 +348,6 @@ class InventoryBar():
               self.items[slot] = potion_type
               self.pickup_sound_effect.play()
               return True
-          
-      print("inventory full")
       return False
   
   def use_potion(self, item_index):
@@ -375,7 +371,6 @@ class InventoryBar():
           scene.effects.trigger_effect("defense_boost")
       elif potion_type == 4:  # Green potion
           scene.effects.trigger_effect("stamina")
-
       return True
   
   def use_potion_animation(self):
@@ -728,10 +723,15 @@ class Scenes():
     self.effects.apply_effects()
     self.fence.bullet_hit(self.finn.bullet_group, self.finn.bullet_buff)
     current_distance = scene.distance.distance_covered * 0.05
-    if current_distance >= scene.speed_milestone:
+    milestones = [500, 1200, 2000, 3000, 4000]
+    if scene.speed_milestone < len(milestones):
+      if current_distance >= milestones[scene.speed_milestone]:
         if scene.finn.base_speed < scene.max_base_speed:
             scene.finn.base_speed += 1
-            scene.speed_milestone += 200
+        scene.speed_milestone += 1
+    if self.effects.effects["speed_boost"]["active"]:
+      speed *= 2
+    self.scroll_speed = speed
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -901,9 +901,8 @@ class Mushroom(pygame.sprite.Sprite):
       self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
   
       if self.dead == False and self.collide == False:
-          # Only draw if the sprite should be visible during blinking
-          if self.update_blinking():
-              screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
+        if self.update_blinking():
+            screen.blit(self.animation_list[action][self.animation_index[action]], (self.x, self.y))
 
   def killed(self):
       cooldown = 100
@@ -928,7 +927,6 @@ class Mushroom(pygame.sprite.Sprite):
           self.special_effect.trigger_poison()
       if self.animation_index[4] == 13:
           self.kill()
-          print("poisoned")
       screen.blit(self.poison_animation[self.animation_index[4]], (self.x-20, self.y-30))
      
 class Mouse(pygame.sprite.Sprite):
@@ -999,13 +997,13 @@ class MushroomManager:
     for mushroom in self.mushroom_group:
       # Only check collision if the mushroom is alive (not dead or in death animation)
       if not mushroom.dead and mushroom.rect.colliderect(finn.hitbox):
-          if finn.invincible_buff:
-              mushroom.dead = True  # kill mushroom on contact
-          elif not mushroom.collide:
-              mushroom.collide = True
-              if current_time - self.last_collide > 100:
-                  self.last_collide = current_time
-                  finn.health_bar.takeDamage(3)
+        if finn.invincible_buff:
+            mushroom.dead = True  # kill mushroom on contact
+        elif not mushroom.collide:
+          mushroom.collide = True
+          if current_time - self.last_collide > 100:
+            self.last_collide = current_time
+            finn.health_bar.takeDamage(3)
       
 class FenceManager:
   def __init__(self, scroll_speed):
@@ -1037,36 +1035,35 @@ class FenceManager:
       if fence.fence_x < -50:
         fence.kill()
       if fence.rect.colliderect(finn.hitbox) and current_time - self.last_collision > 500:
-          self.last_collision = current_time
-          finn.health_bar.takeDamage(2)
-          fence.blink()
+        self.last_collision = current_time
+        finn.health_bar.takeDamage(2)
+        fence.blink()
 
     self.fence_group.draw(screen)
 
   def bullet_hit(self, bullets, bullet_buff):
     for fence in self.fence_group:
-        for bullet in bullets:
-            if fence.rect.colliderect(bullet.rect) and bullet_buff:
-                self.fence_sound.play()
-                fence.kill()
-                bullets.remove(bullet)
-                break 
+      for bullet in bullets:
+        if fence.rect.colliderect(bullet.rect) and bullet_buff:
+          self.fence_sound.play()
+          fence.kill()
+          bullets.remove(bullet)
+          break 
 
 class SpriteSheet():
-    def __init__(self, image):
-        self.sheet = image
+  def __init__(self, image):
+    self.sheet = image
 
-    def get_image(self, frame_x, frame_width, frame_height, scale, colours):
-        img = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
-        img.blit(self.sheet, (0, 0), (frame_x * frame_width, 0, frame_width, frame_height))
-        img = pygame.transform.scale(img, (int(frame_width * scale), int(frame_height * scale)))
+  def get_image(self, frame_x, frame_width, frame_height, scale, colours):
+    img = pygame.Surface((frame_width, frame_height), pygame.SRCALPHA)
+    img.blit(self.sheet, (0, 0), (frame_x * frame_width, 0, frame_width, frame_height))
+    img = pygame.transform.scale(img, (int(frame_width * scale), int(frame_height * scale)))
 
-        for x in range(img.get_width()):
-            for y in range(img.get_height()):
-                if img.get_at((x, y))[:3] in colours:
-                    img.set_at((x, y), (0, 0, 0, 0))
-        return img
-
+    for x in range(img.get_width()):
+      for y in range(img.get_height()):
+        if img.get_at((x, y))[:3] in colours:
+          img.set_at((x, y), (0, 0, 0, 0))
+    return img
 
 class Finn(pygame.sprite.Sprite):
   def __init__(self, x, y, health_bar, stamina_bar, scale=1.2):
@@ -1149,12 +1146,12 @@ class Finn(pygame.sprite.Sprite):
   def load_frames(self, animation_steps):
     step_counter = 0
     for i, steps in enumerate(animation_steps):
-        temp_list = []
-        for _ in range(steps):
-            img = self.sprite_sheet.get_image(step_counter, self.frame_width[i],  self.frame_height[i], self.scale, self.unwanted_colors)
-            temp_list.append(img)
-            step_counter += 1
-        self.animation_list.append(temp_list)
+      temp_list = []
+      for _ in range(steps):
+        img = self.sprite_sheet.get_image(step_counter, self.frame_width[i],  self.frame_height[i], self.scale, self.unwanted_colors)
+        temp_list.append(img)
+        step_counter += 1
+      self.animation_list.append(temp_list)
 
   def update_hitbox(self):
     self.hitbox = pygame.Rect(self.pos[0] + self.hitbox_offset_x, self.pos[1] + self.hitbox_offset_y, self.hitbox_width, self.hitbox_height)
@@ -1162,22 +1159,23 @@ class Finn(pygame.sprite.Sprite):
   def update(self):
     now = pygame.time.get_ticks()
     if now - self.last_update >= self.cooldown:
-        self.frame = (self.frame + 1) % len(self.animation_list[self.finn_action])
-        self.last_update = now
-        if self.frame == 0 and self.finn_action != 0:
-            self.set_finn_action(0)
+      self.frame = (self.frame + 1) % len(self.animation_list[self.finn_action])
+      self.last_update = now
+      if self.frame == 0 and self.finn_action != 0:
+          self.set_finn_action(0)
     
     if self.running and self.stamina_bar.current_stamina > 0:
       self.speed = self.base_speed * self.run_multiplier
       now = pygame.time.get_ticks()
       if now - self.last_stamina_use_time > 300:
-          self.stamina_bar.decreaseStamina(1)
-          self.last_stamina_use_time = now
+        self.stamina_bar.decreaseStamina(1)
+        self.last_stamina_use_time = now
+      if not scene.effects.effects["wind_screen"]["active"]:
+        scene.effects.effects["wind_screen"]["active"] = True
+        scene.effects.effects["wind_screen"]["start_time"] = pygame.time.get_ticks()
+        scene.effects.effects["wind_screen"]["positions"] = []
     else:
         self.speed = self.base_speed
-      
-    if self.stamina_bar.current_stamina <= 0:
-      self.running = False
 
     self.image = self.animation_list[self.finn_action][self.frame]
     self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
@@ -1185,14 +1183,14 @@ class Finn(pygame.sprite.Sprite):
 
     # Jumping Mechanics
     if not self.is_jumping:
+      if self.pos[1] < self.lane_target_y:
+        self.pos[1] += self.speed
+        if self.pos[1] > self.lane_target_y:
+            self.pos[1] = self.lane_target_y
+      elif self.pos[1] > self.lane_target_y:
+        self.pos[1] -= self.speed
         if self.pos[1] < self.lane_target_y:
-            self.pos[1] += self.speed
-            if self.pos[1] > self.lane_target_y:
-                self.pos[1] = self.lane_target_y
-        elif self.pos[1] > self.lane_target_y:
-            self.pos[1] -= self.speed
-            if self.pos[1] < self.lane_target_y:
-                self.pos[1] = self.lane_target_y
+            self.pos[1] = self.lane_target_y
     
     if self.is_jumping:
         self.finn_y_velocity += self.gravity
@@ -1205,59 +1203,60 @@ class Finn(pygame.sprite.Sprite):
         self.set_finn_action(0)
 
     for bullet in list(self.bullet_group):
-        bullet.update()
-        if bullet.rect.x > 2000:
-            self.bullet_group.remove(bullet)
+      bullet.update()
+      if bullet.rect.x > 2000:
+        self.bullet_group.remove(bullet)
 
     # Start blinking if health < 4
     if self.health_bar.current_health < 4:
-        if not self.low_health_blink:
-            self.low_health_blink = True
-            self.blink_start_time = pygame.time.get_ticks()
-            self.last_blink_toggle = self.blink_start_time
+      if not self.low_health_blink:
+          self.low_health_blink = True
+          self.blink_start_time = pygame.time.get_ticks()
+          self.last_blink_toggle = self.blink_start_time
     else:
-        self.low_health_blink = False
-        self.blink_visible = True
+      self.low_health_blink = False
+      self.blink_visible = True
 
     # Toggle visibility if blinking
     if self.low_health_blink:
-        now = pygame.time.get_ticks()
-        if now - self.last_blink_toggle > self.blink_interval:
-            self.blink_visible = not self.blink_visible
-            self.last_blink_toggle = now
+      now = pygame.time.get_ticks()
+      if now - self.last_blink_toggle > self.blink_interval:
+        self.blink_visible = not self.blink_visible
+        self.last_blink_toggle = now
 
   def draw(self, screen):
     if self.blink_visible:
-        screen.blit(self.image, self.rect.topleft)
+      screen.blit(self.image, self.rect.topleft)
     for bullet in self.bullet_group:
-        bullet.draw(screen)
+      bullet.draw(screen)
 
   def handle_input(self, event):
     if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_w and self.current_lane > 0:
-            self.current_lane -= 1
-            self.lane_target_y = self.lanes[self.current_lane]
-        elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
-            self.current_lane += 1
-            self.lane_target_y = self.lanes[self.current_lane]
-        elif event.key == pygame.K_SPACE and not self.is_jumping:
-            self.is_jumping = True
-            self.finn_y_velocity = self.jump_velocity
-            self.set_finn_action(1)
-            self.jump_sound.play()
-        elif event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
-            self.running = True
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
-                self.running = False
+      if event.key == pygame.K_w and self.current_lane > 0:
+        self.current_lane -= 1
+        self.lane_target_y = self.lanes[self.current_lane]
+      elif event.key == pygame.K_s and self.current_lane < len(self.lanes) - 1:
+        self.current_lane += 1
+        self.lane_target_y = self.lanes[self.current_lane]
+      elif event.key == pygame.K_SPACE and not self.is_jumping:
+        self.is_jumping = True
+        self.finn_y_velocity = self.jump_velocity
+        self.set_finn_action(1)
+        self.jump_sound.play()
+      elif event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+        self.running = True
+
+    elif event.type == pygame.KEYUP:
+      if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+          self.running = False
 
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_shoot_time >= self.shoot_cooldown:
-            self.set_finn_action(2)
-            self.shoot_bullet()
-            self.shoot_sound.play()
-            self.last_shoot_time = current_time
+      current_time = pygame.time.get_ticks()
+      if current_time - self.last_shoot_time >= self.shoot_cooldown:
+          self.set_finn_action(2)
+          self.shoot_bullet()
+          self.shoot_sound.play()
+          self.last_shoot_time = current_time
 
   def set_finn_action(self, action_index):
     if action_index < len(self.animation_list):
@@ -1268,7 +1267,6 @@ class Finn(pygame.sprite.Sprite):
   def shoot_bullet(self):
       bullet_x = self.pos[0] + int(40 * self.scale)
       bullet_y = self.pos[1] + int(25 * self.scale)
-      # Choose sprite based on buff
       bullet_sprite_path = (
       Path("assets") / "character" / "Effects" / "purple_bullet.png" 
       if self.bullet_buff else Path("assets") / "character" / "Bullet_animation.png")
@@ -1301,7 +1299,6 @@ class Bullet(pygame.sprite.Sprite):
       self.speed = speed
       self.update_collision_rect()
 
-
   def update_collision_rect(self):
       width = int(self.rect.width * self.collision_scale)
       height = int(self.rect.height * self.collision_scale)
@@ -1313,10 +1310,8 @@ class Bullet(pygame.sprite.Sprite):
       for steps in animation_steps:
           temp_list = []
           for _ in range(steps):
-              img = self.sprite_sheet.get_image(
-                  frame_x=step_counter, frame_width=self.frame_width,
-                  frame_height=self.frame_height, scale=self.scale, colours=self.unwanted_colors
-              )
+              img = self.sprite_sheet.get_image(frame_x=step_counter, frame_width=self.frame_width,
+                  frame_height=self.frame_height, scale=self.scale, colours=self.unwanted_colors)
               temp_list.append(img)
               step_counter += 1
           self.animation_list.append(temp_list)
@@ -1336,59 +1331,71 @@ class Bullet(pygame.sprite.Sprite):
 class EffectManager():
   def __init__(self):
     # ---- Buff Setup and Poison----
+    wind_sheet = pygame.image.load(Path("assets") / "character" / "Effects" / "wind_screen.png").convert_alpha()
+    wind_frames = [getImage(wind_sheet, i, 64, 64, 3) for i in range(9)]
     self.effects = {
-            "poisoned": {
-                "active": False,"start_time": 0,"duration": 1000,"cooldown": 0,
-                "frames": [],"index": 0,"path": None,"scale": 0,"frame_count": 0,
-                "frame_size": (0, 0),"action": self.no_action,"cleanup": self.no_cleanup},
+      "poisoned": {
+          "active": False,"start_time": 0,"duration": 1000,"cooldown": 0,
+          "frames": [],"index": 0,"path": None,"scale": 0,"frame_count": 0,
+          "frame_size": (0, 0),"action": self.no_action,"cleanup": self.no_cleanup},
 
-            "bullet_buff": {
-                "active": False, "start_time": 0,"duration": 5000,"cooldown": 150, "frames": [],"index": 0,
-                "path": Path("assets") / "character" / "Effects" / "purple_potion.png", "scale": 4, "frame_count": 10,
-                "frame_size": (64, 64), "action": self.enable_bullet_buff,
-                "cleanup": self.disable_bullet_buff},
+      "bullet_buff": {
+          "active": False, "start_time": 0,"duration": 5000,"cooldown": 150, "frames": [],"index": 0,
+          "path": Path("assets") / "character" / "Effects" / "purple_potion.png", "scale": 4, "frame_count": 10,
+          "frame_size": (64, 64), "action": self.enable_bullet_buff,
+          "cleanup": self.disable_bullet_buff},
 
-            "heal": {
-                "active": False,"start_time": 0,"duration": 2250,"cooldown": 100,"frames": [],"index": 0,
-                "path": Path("assets") / "character" / "Effects" / "red_potion.png","scale": 3,"frame_count": 10,
-                "frame_size": (64, 64),"action": self.apply_heal,
-                "cleanup": self.no_cleanup},
-            
-            "stamina": {"active": False, "start_time": 0, "duration": 2000, "cooldown": 120, "frames": [], "index": 0,
-                "path": Path("assets") / "character" / "Effects" / "green_potion.png", "scale": 2, "frame_count": 10,
-                "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup},
+      "heal": {
+          "active": False,"start_time": 0,"duration": 2250,"cooldown": 100,"frames": [],"index": 0,
+          "path": Path("assets") / "character" / "Effects" / "red_potion.png","scale": 3,"frame_count": 10,
+          "frame_size": (64, 64),"action": self.apply_heal,
+          "cleanup": self.no_cleanup},
+      
+      "stamina": {"active": False, "start_time": 0, "duration": 2000, "cooldown": 120, "frames": [], "index": 0,
+          "path": Path("assets") / "character" / "Effects" / "green_potion.png", "scale": 2, "frame_count": 10,
+          "frame_size": (64, 64), "action": self.apply_stamina, "cleanup": self.no_cleanup},
 
-            "speed_boost": {
-                "active": False, "start_time": 0, "duration": 5000, "cooldown": 100, "frames": [], "index": 0,
-                "path": Path("assets") / "character" / "Effects" / "blue_potion.png", "scale": 3, "frame_count": 10, 
-                "frame_size": (64, 64), "action": self.enable_blue_buff, "cleanup": self.disable_blue_buff},
+      "speed_boost": {
+          "active": False, "start_time": 0, "duration": 3000, "cooldown": 100, "frames": [], "index": 0,
+          "path": Path("assets") / "character" / "Effects" / "blue_potion.png", "scale": 3, "frame_count": 10, 
+          "frame_size": (64, 64), "action": self.enable_blue_buff, "cleanup": self.disable_blue_buff},
 
-            "defense_boost": {"active": False, "start_time": 0, "duration": 3000, "cooldown": 100, "frames": [], "index": 0,
-                "path": Path("assets") / "character" / "Effects" / "yellow_potion.png", "scale": 3, "frame_count": 10,
-                "frame_size": (64, 64), "action": self.enable_defense_boost, "cleanup": self.disable_defense_boost}}
+      "defense_boost": {"active": False, "start_time": 0, "duration": 3000, "cooldown": 100, "frames": [], "index": 0,
+          "path": Path("assets") / "character" / "Effects" / "yellow_potion.png", "scale": 3, "frame_count": 10,
+          "frame_size": (64, 64), "action": self.enable_defense_boost, "cleanup": self.disable_defense_boost},
+          
+      "wind_screen": {"active": False, "start_time": 0, "duration": None, "cooldown": 100, "frames": wind_frames, "index": 0, 
+          "last_update": 0, "positions": [], "action": self.no_action, "cleanup": self.no_cleanup}}
 
     # Load frames
     for key, effect in self.effects.items():
-        if effect["path"] and effect["frame_count"] > 0:
-            sheet = pygame.image.load(effect["path"]).convert_alpha()
-            frames = [getImage(sheet, i, *effect["frame_size"], effect["scale"]) for i in range(effect["frame_count"])]
-            effect["frames"] = frames
+      if "path" not in effect or "frame_count" not in effect or effect["frame_count"] == 0:
+          continue
+      sheet = pygame.image.load(effect["path"]).convert_alpha()
+      frames = [getImage(sheet, i, *effect["frame_size"], effect["scale"]) for i in range(effect["frame_count"])]
+      effect["frames"] = frames
 
   def set_finn(self, finn):
     self.finn_ref = finn
 
   def trigger_effect(self, effect_key):
-      for key, effect in self.effects.items():
-          if key != "poisoned" and effect["active"]:
-              effect["active"] = False
-              effect["cleanup"]()
+    for key, effect in self.effects.items():
+      if key != "poisoned" and effect["active"]:
+        effect["active"] = False
+        effect["cleanup"]()
 
-      effect = self.effects.get(effect_key)
-      if effect:
-          effect["active"] = True
-          effect["start_time"] = pygame.time.get_ticks()
-          effect["index"] = 0
-          effect["action"]()
+    effect = self.effects.get(effect_key)
+    if effect:
+      effect["active"] = True
+      effect["start_time"] = pygame.time.get_ticks()
+      effect["index"] = 0
+      effect["action"]()
+
+    if effect_key == "speed_boost":
+      wind = self.effects["wind_screen"]
+      wind["active"] = True
+      wind["start_time"] = pygame.time.get_ticks()
+      wind["positions"] = []
 
   def poisoned(self):
     time_ms = pygame.time.get_ticks()
@@ -1406,33 +1413,55 @@ class EffectManager():
     screen.blit(overlay, (0, 0))
 
   def apply_effects(self):
-      for key, effect in self.effects.items():
-          if effect["active"]:
-              now = pygame.time.get_ticks()
-              elapsed = now - effect["start_time"]
-              if elapsed > effect["duration"]:
-                  effect["active"] = False
-                  effect["cleanup"]()
-                  continue
+    now = pygame.time.get_ticks()
+    for key, effect in self.effects.items():
+      if key == "wind_screen":
+          self.apply_wind_effect()
+          continue
 
-              if key == "poisoned":
-                  self.poisoned()
-                  continue
-              
-              if not effect["frames"]:
-                  continue
+      if effect["active"]:
+        elapsed = now - effect["start_time"]
+        if elapsed > effect["duration"]:
+          effect["active"] = False
+          effect["cleanup"]()
+          continue
 
-              # Update animation frame
-              if now - effect.get("last_update", 0) > effect["cooldown"]:
-                  effect["index"] = (effect["index"] + 1) % len(effect["frames"])
-                  effect["last_update"] = now
+        if key == "poisoned":
+          self.poisoned()
+          continue
 
-              # Draw at Finn's center
-              if self.finn_ref:
-                  frame = effect["frames"][effect["index"]]
-                  x = self.finn_ref.rect.centerx - frame.get_width() // 2
-                  y = self.finn_ref.rect.centery - frame.get_height() // 2
-                  screen.blit(frame, (x, y))
+        if not effect["frames"]:
+          continue
+
+        if now - effect.get("last_update", 0) > effect["cooldown"]:
+          effect["index"] = (effect["index"] + 1) % len(effect["frames"])
+          effect["last_update"] = now
+
+        if self.finn_ref:
+          frame = effect["frames"][effect["index"]]
+          x = self.finn_ref.rect.centerx - frame.get_width() // 2
+          y = self.finn_ref.rect.centery - frame.get_height() // 2
+          screen.blit(frame, (x, y))
+
+  def apply_wind_effect(self):
+    wind = self.effects["wind_screen"]
+    now = pygame.time.get_ticks()
+    
+    if (not self.effects["speed_boost"]["active"] and (not self.finn_ref.running or self.finn_ref.stamina_bar.current_stamina <= 0)):
+        wind["active"] = False
+        return
+
+    if now - wind["last_update"] > wind["cooldown"]:
+      wind["index"] = (wind["index"] + 1) % len(wind["frames"])
+      wind["last_update"] = now
+      wind["positions"].append([SCREEN_WIDTH, random.randint(100, 450)])
+
+    frame = wind["frames"][wind["index"]]
+    for pos in list(wind["positions"]):
+      pos[0] -= 20
+      screen.blit(frame, (pos[0], pos[1]))
+      if pos[0] < -frame.get_width():
+          wind["positions"].remove(pos)
 
   def trigger_poison(self):
       poison = self.effects["poisoned"]
@@ -1447,30 +1476,30 @@ class EffectManager():
       pass
 
   def enable_bullet_buff(self):
-      self.finn_ref.bullet_buff = True
+    self.finn_ref.bullet_buff = True
 
   def disable_bullet_buff(self):
-      self.finn_ref.bullet_buff = False
+    self.finn_ref.bullet_buff = False
 
   def apply_heal(self):
-      self.finn_ref.health_bar.heal(6)
+    self.finn_ref.health_bar.heal(6)
 
   def apply_stamina(self):
     self.finn_ref.stamina_bar.increaseStamina(3)
 
   def enable_blue_buff(self):
-      self.finn_ref.speed *= 1.5
-      self.finn_ref.invincible_buff = True
+    self.finn_ref.base_speed *= 2
+    self.finn_ref.invincible_buff = True
 
   def disable_blue_buff(self):
-      self.finn_ref.speed /= 1.5
-      self.finn_ref.invincible_buff = False
+    self.finn_ref.base_speed /= 2
+    self.finn_ref.invincible_buff = False
   
   def enable_defense_boost(self):
-      self.finn_ref.invincible_buff = True
+    self.finn_ref.invincible_buff = True
 
   def disable_defense_boost(self):
-      self.finn_ref.invincible_buff = False
+    self.finn_ref.invincible_buff = False
 
 scene = Scenes()
 running = True
