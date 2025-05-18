@@ -50,7 +50,6 @@ distance_tracker = resizeObject(distance_tracker, 5.5)
 inventory_img = pygame.image.load(inventory_path)
 inventory_img = resizeObject(inventory_img, 2)
 
-    
 class Score():
   def __init__(self):
     self.name = None
@@ -655,13 +654,13 @@ class Scenes():
     self.scroll_speed = 3
     self.scrolled = 0
     self.speed_milestone = 300
-    self.max_base_speed = 12
+    self.max_base_speed = 15
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
     self.dialogue = DialogueBox()
     self.effects = EffectManager()
-
+    self.leaderboard = LeaderBoard()
     self.mouse = Mouse()
     self.health_bar = HealthBar()
     self.stamina_bar = StaminaBar()
@@ -671,6 +670,11 @@ class Scenes():
     self.clock = pygame.time.Clock()
     self.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
     self.running_sound.play()
+    self.game_finished = False
+
+    self.timer_start = pygame.time.get_ticks()
+    self.elapsed_time = 0
+    self.timer_font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 24)
     
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -698,40 +702,75 @@ class Scenes():
     #display UI
     screen.blit(chara_board, (30, 30))
     screen.blit(chara_frame, (55, 45))
+    if self.distance.distance_covered * 0.05 >= 3000 and not self.game_finished:
+      self.game_finished = True
+      self.timer_active = True
+      self.timer_start = pygame.time.get_ticks()
+      if self.game_finished:
+          if self.leaderboard.accepting_username:
+              self.leaderboard.get_username()
+          elif self.leaderboard.done_accepting_username:
+              self.leaderboard.save_score(self.leaderboard.final_time)
+              self.leaderboard.load_file()
+              self.leaderboard.sort()
+              self.leaderboard.show_leaderboard()
 
     #finn potrait
-    finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
-    finn_img = pygame.image.load(finn_potrait_path)
-    finn_img = resizeObject(finn_img, 0.4)
-    screen.blit(finn_img, (61, 60))
-    self.finn.health_bar.draw()
-    self.finn.stamina_bar.draw()
-    self.fence.update(self.scroll_speed, self.finn)  #spawn fences
-    self.distance.updateDistance(speed)   #track distance
-    self.inventory.update_animation()
-    self.inventory.draw(308, 575)
-    if spawn_mushroom:
-      self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
-    self.potion.update(speed)
-    self.inventory.handle_hover()
-    self.mouse.draw()    #DELETE LTR
-    self.potion.pick_up_potion(self.finn)
-    self.finn.update
-    self.finn.draw(screen)
-    self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
-    self.mushroom.collide(self.finn)
-    self.effects.apply_effects()
-    self.fence.bullet_hit(self.finn.bullet_group, self.finn.bullet_buff)
-    current_distance = scene.distance.distance_covered * 0.05
-    milestones = [500, 1200, 2000, 3000, 4000]
-    if scene.speed_milestone < len(milestones):
-      if current_distance >= milestones[scene.speed_milestone]:
-        if scene.finn.base_speed < scene.max_base_speed:
-            scene.finn.base_speed += 1
-        scene.speed_milestone += 1
-    if self.effects.effects["speed_boost"]["active"]:
-      speed *= 2
-    self.scroll_speed = speed
+    if not self.game_finished:
+      finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
+      finn_img = pygame.image.load(finn_potrait_path)
+      finn_img = resizeObject(finn_img, 0.4)
+      screen.blit(finn_img, (61, 60))
+      self.finn.health_bar.draw()
+      self.finn.stamina_bar.draw()
+      self.fence.update(self.scroll_speed, self.finn)  #spawn fences
+      self.distance.updateDistance(speed)   #track distance
+      self.inventory.update_animation()
+      self.inventory.draw(308, 575)
+      if spawn_mushroom:
+        self.mushroom.update(num_of_mushroom, speed) #spawn mushroom
+      self.potion.update(speed)
+      self.inventory.handle_hover()
+      self.mouse.draw()    #DELETE LTR
+      self.potion.pick_up_potion(self.finn)
+      self.finn.update
+      self.finn.draw(screen)
+      self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
+      self.mushroom.collide(self.finn)
+      self.effects.apply_effects()
+      self.fence.bullet_hit(self.finn.bullet_group, self.finn.bullet_buff)
+
+      # Smoothly update Finn's base speed toward the max base speed
+      target_base_speed = self.max_base_speed
+      self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.001
+      if self.effects.effects["speed_boost"]["active"]:
+          target_scroll_speed = self.finn.base_speed * 2
+      else:
+          target_scroll_speed = self.finn.base_speed
+
+      self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.01
+
+
+    else:
+      finish_text = self.timer_font.render("FINISH!", True, brown)
+      screen.blit(finish_text, (SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT//2 - 30))
+
+      if not hasattr(self, 'score_saved'):
+        self.elapsed_time = pygame.time.get_ticks() - self.timer_start
+        seconds = self.elapsed_time // 1000
+        scene.leaderboard.accepting_username = True
+        scene.leaderboard.done_accepting_username = False
+        scene.leaderboard.username = "" 
+        scene.leaderboard.final_time = str(seconds)
+        self.score_saved = True
+
+    # === STOPWATCH DISPLAY ===
+    self.elapsed_time = pygame.time.get_ticks() - self.timer_start
+    seconds = self.elapsed_time // 1000
+    minutes = seconds // 60
+    remaining_seconds = seconds % 60
+    timer_text = self.timer_font.render(f"{minutes:02}:{remaining_seconds:02}", True, brown)
+    screen.blit(timer_text, (1100, 130))
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -745,7 +784,6 @@ class Scenes():
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
-
 
 class Fence(pygame.sprite.Sprite):
   def __init__(self, x, y):
@@ -799,57 +837,57 @@ class Fence(pygame.sprite.Sprite):
   
 class Mushroom(pygame.sprite.Sprite):
   def __init__(self, y, effect_manager):
-      super().__init__()
-      self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
-      self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
-      self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
-      spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
-                        pygame.image.load(self.attack_spritesheet).convert_alpha(), 
-                        pygame.image.load(self.die_spritesheet).convert_alpha()]
-      
-      self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
-      self.animation_frames = [7,9,4]
-      self.animation_list = []
-      self.animation_index = [0,0,0,0,0]
-      self.explode_animation = []
-      self.poison_animation = []
-      self.last_update_time = 0
-      self.explode_animation_last_update_time = 0
-      self.collide_animation_update_time = 0
-      self.x = 1300
-      self.y = y
-      self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
-      self.dead = False
-      self.collide = False
-      self.health = 2
-      self.special_effect = effect_manager
-      
-      # Blink effect variables
-      self.is_blinking = False
-      self.blink_duration = 500  # Total blinking time in milliseconds
-      self.blink_start_time = 0
-      self.blink_interval = 100  # Time between blink toggling in milliseconds
-      self.blink_visible = True  # Flag to toggle visibility during blinking
-      self.last_blink_toggle = 0
-      
-      for animation in range(len(spritesheets)):
-          placeholder = []
-          for frame in range(self.animation_frames[animation]):
-              img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
-              placeholder.append(img)
-              #screen.blit(img, (200,200))
-          self.animation_list.append(placeholder)
-      
-      explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
-      poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
-      explode_img = pygame.image.load(explode_path)
-      poison_img = pygame.image.load(poison_path)
-      
-      for frame in range(14):
-          img = getImage(explode_img, frame, 64, 64, 2.5)
-          img2 = getImage(poison_img, frame, 64, 64, 2.5)
-          self.explode_animation.append(img)
-          self.poison_animation.append(img2)
+    super().__init__()
+    self.run_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Run.png"
+    self.attack_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Attack.png"
+    self.die_spritesheet = Path("assets") / "enemy" / "mushroom" / "Mushroom-Die.png"
+    spritesheets = [pygame.image.load(self.run_spritesheet).convert_alpha(),
+                      pygame.image.load(self.attack_spritesheet).convert_alpha(), 
+                      pygame.image.load(self.die_spritesheet).convert_alpha()]
+    
+    self.img = getImage(spritesheets[0], 0, 80, 64, 1.7)
+    self.animation_frames = [7,9,4]
+    self.animation_list = []
+    self.animation_index = [0,0,0,0,0]
+    self.explode_animation = []
+    self.poison_animation = []
+    self.last_update_time = 0
+    self.explode_animation_last_update_time = 0
+    self.collide_animation_update_time = 0
+    self.x = 1300
+    self.y = y
+    self.rect = pygame.Rect((self.x + 30), (self.y + 45), 70 , 64)
+    self.dead = False
+    self.collide = False
+    self.health = 2
+    self.special_effect = effect_manager
+    
+    # Blink effect variables
+    self.is_blinking = False
+    self.blink_duration = 500  # Total blinking time in milliseconds
+    self.blink_start_time = 0
+    self.blink_interval = 100  # Time between blink toggling in milliseconds
+    self.blink_visible = True  # Flag to toggle visibility during blinking
+    self.last_blink_toggle = 0
+    
+    for animation in range(len(spritesheets)):
+        placeholder = []
+        for frame in range(self.animation_frames[animation]):
+            img = getImage(spritesheets[animation], frame, 80, 64, 1.7)
+            placeholder.append(img)
+            #screen.blit(img, (200,200))
+        self.animation_list.append(placeholder)
+    
+    explode_path = Path("assets") / "character" / "Effects" / "Mushroom die.png"
+    poison_path = Path("assets") / "character" / "Effects" / "hit_by_mushroom.png"
+    explode_img = pygame.image.load(explode_path)
+    poison_img = pygame.image.load(poison_path)
+    
+    for frame in range(14):
+        img = getImage(explode_img, frame, 64, 64, 2.5)
+        img2 = getImage(poison_img, frame, 64, 64, 2.5)
+        self.explode_animation.append(img)
+        self.poison_animation.append(img2)
 
   def take_damage(self, bullet_buff):
       if bullet_buff == True:
@@ -1515,11 +1553,14 @@ while running:
 
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
-        running = False
+      running = False
     scene.mouse.get_input(event)
-    scene.dialogue.handle_input(event)
-    scene.inventory.handle_click(event)
-    scene.finn.handle_input(event)
+    if scene.game_finished:
+      scene.leaderboard.get_input(event)
+    if not scene.game_finished:
+      scene.dialogue.handle_input(event)
+      scene.inventory.handle_click(event)
+      scene.finn.handle_input(event)
       
   pygame.display.update()
 
