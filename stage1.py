@@ -659,6 +659,8 @@ class Scenes():
     stage1_bg = pygame.image.load(bg1_path)
     self.scroll_speed = 3
     self.scrolled = 0
+    self.speed_milestone = 300
+    self.max_base_speed = 12
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
@@ -666,8 +668,15 @@ class Scenes():
     self.effects = EffectManager()
 
     self.mouse = Mouse()
-    self.finn = Finn(x=100, y=310, health_bar=health_bar, stamina_bar=stamina_bar)
+    self.health_bar = HealthBar()
+    self.stamina_bar = StaminaBar()
+    self.finn = Finn(x=100, y=310, health_bar=self.health_bar, stamina_bar=self.stamina_bar)
+    self.effects.set_finn(self.finn)
 
+    self.clock = pygame.time.Clock()
+    self.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+    self.running_sound.play()
+    
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
     self.mushroom = MushroomManager(self.effects, None, None)  # Temporarily pass None
@@ -718,6 +727,11 @@ class Scenes():
     self.mushroom.collide(self.finn)
     self.effects.apply_effects()
     self.fence.bullet_hit(self.finn.bullet_group, self.finn.bullet_buff)
+    current_distance = scene.distance.distance_covered * 0.05
+    if current_distance >= scene.speed_milestone:
+        if scene.finn.base_speed < scene.max_base_speed:
+            scene.finn.base_speed += 1
+            scene.speed_milestone += 200
 
     # script = [{"speaker" : "Ice King", "line" : "Helllo"},
     #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
@@ -731,7 +745,6 @@ class Scenes():
   
     #get key pressed
     key_pressed = pygame.key.get_pressed()
-
 
 
 class Fence(pygame.sprite.Sprite):
@@ -1118,6 +1131,21 @@ class Finn(pygame.sprite.Sprite):
     self.invincible_buff = False
     self.bullet_buff = False
 
+    # Low Health
+    self.low_health_blink = False
+    self.blink_start_time = 0
+    self.blink_interval = 200
+    self.blink_visible = True
+    self.last_blink_toggle = 0
+
+    # Stamina
+    self.running = False
+    self.base_speed = self.speed
+    self.run_multiplier = 1.7
+    self.stamina_deplete_rate = 0.2  # adjust as needed
+    self.last_stamina_use_time = pygame.time.get_ticks()
+
+
   def load_frames(self, animation_steps):
     step_counter = 0
     for i, steps in enumerate(animation_steps):
@@ -1138,6 +1166,18 @@ class Finn(pygame.sprite.Sprite):
         self.last_update = now
         if self.frame == 0 and self.finn_action != 0:
             self.set_finn_action(0)
+    
+    if self.running and self.stamina_bar.current_stamina > 0:
+      self.speed = self.base_speed * self.run_multiplier
+      now = pygame.time.get_ticks()
+      if now - self.last_stamina_use_time > 300:
+          self.stamina_bar.decreaseStamina(1)
+          self.last_stamina_use_time = now
+    else:
+        self.speed = self.base_speed
+      
+    if self.stamina_bar.current_stamina <= 0:
+      self.running = False
 
     self.image = self.animation_list[self.finn_action][self.frame]
     self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
@@ -1169,8 +1209,26 @@ class Finn(pygame.sprite.Sprite):
         if bullet.rect.x > 2000:
             self.bullet_group.remove(bullet)
 
+    # Start blinking if health < 4
+    if self.health_bar.current_health < 4:
+        if not self.low_health_blink:
+            self.low_health_blink = True
+            self.blink_start_time = pygame.time.get_ticks()
+            self.last_blink_toggle = self.blink_start_time
+    else:
+        self.low_health_blink = False
+        self.blink_visible = True
+
+    # Toggle visibility if blinking
+    if self.low_health_blink:
+        now = pygame.time.get_ticks()
+        if now - self.last_blink_toggle > self.blink_interval:
+            self.blink_visible = not self.blink_visible
+            self.last_blink_toggle = now
+
   def draw(self, screen):
-    screen.blit(self.image, self.rect.topleft)
+    if self.blink_visible:
+        screen.blit(self.image, self.rect.topleft)
     for bullet in self.bullet_group:
         bullet.draw(screen)
 
@@ -1187,6 +1245,11 @@ class Finn(pygame.sprite.Sprite):
             self.finn_y_velocity = self.jump_velocity
             self.set_finn_action(1)
             self.jump_sound.play()
+        elif event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+            self.running = True
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
+                self.running = False
 
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         current_time = pygame.time.get_ticks()
@@ -1409,21 +1472,16 @@ class EffectManager():
   def disable_defense_boost(self):
       self.finn_ref.invincible_buff = False
 
-health_bar = HealthBar()
-stamina_bar = StaminaBar()
 scene = Scenes()
-scene.effects.set_finn(scene.finn)
 running = True
-clock = pygame.time.Clock()
-running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
-running_sound.play()
 
 #start
 while running:
   pygame.mouse.set_visible(False)
   clock.tick(FPS)
-  scene.emptyBg(10)
-  scene.level1(10, True, 2)
+  scroll_speed = min(scene.finn.speed, 15)
+  scene.emptyBg(scroll_speed)
+  scene.level1(scroll_speed, True, 2)
   scene.finn.update()
 
   for event in pygame.event.get():
