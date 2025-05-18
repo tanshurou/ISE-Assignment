@@ -1142,6 +1142,7 @@ class Finn(pygame.sprite.Sprite):
     self.stamina_deplete_rate = 0.2  # adjust as needed
     self.last_stamina_use_time = pygame.time.get_ticks()
 
+
   def load_frames(self, animation_steps):
     step_counter = 0
     for i, steps in enumerate(animation_steps):
@@ -1174,7 +1175,7 @@ class Finn(pygame.sprite.Sprite):
         scene.effects.effects["wind_screen"]["start_time"] = pygame.time.get_ticks()
         scene.effects.effects["wind_screen"]["positions"] = []
     else:
-      self.speed = self.base_speed
+        self.speed = self.base_speed
 
     self.image = self.animation_list[self.finn_action][self.frame]
     self.rect = self.image.get_rect(topleft=(self.pos[0], self.pos[1]))
@@ -1192,14 +1193,14 @@ class Finn(pygame.sprite.Sprite):
             self.pos[1] = self.lane_target_y
     
     if self.is_jumping:
-      self.finn_y_velocity += self.gravity
-      self.pos[1] += self.finn_y_velocity
+        self.finn_y_velocity += self.gravity
+        self.pos[1] += self.finn_y_velocity
 
     if self.is_jumping and self.pos[1] >= self.lane_target_y - 2:
-      self.pos[1] = self.lane_target_y
-      self.is_jumping = False
-      self.finn_y_velocity = 0
-      self.set_finn_action(0)
+        self.pos[1] = self.lane_target_y
+        self.is_jumping = False
+        self.finn_y_velocity = 0
+        self.set_finn_action(0)
 
     for bullet in list(self.bullet_group):
       bullet.update()
@@ -1247,73 +1248,73 @@ class Finn(pygame.sprite.Sprite):
 
     elif event.type == pygame.KEYUP:
       if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
-        self.running = False
+          self.running = False
 
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
       current_time = pygame.time.get_ticks()
       if current_time - self.last_shoot_time >= self.shoot_cooldown:
-        self.set_finn_action(2)
-        self.shoot_bullet()
-        self.shoot_sound.play()
-        self.last_shoot_time = current_time
+          self.set_finn_action(2)
+          self.shoot_bullet()
+          self.shoot_sound.play()
+          self.last_shoot_time = current_time
 
   def set_finn_action(self, action_index):
     if action_index < len(self.animation_list):
-      self.finn_action = action_index
-      self.frame = 0
-      self.last_update = pygame.time.get_ticks() - self.cooldown - 1
+        self.finn_action = action_index
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks() - self.cooldown - 1
 
   def shoot_bullet(self):
-    bullet_x = self.pos[0] + int(40 * self.scale)
-    bullet_y = self.pos[1] + int(25 * self.scale)
-    bullet_sprite_path = (
-    Path("assets") / "character" / "Effects" / "purple_bullet.png" 
-    if self.bullet_buff else Path("assets") / "character" / "Bullet_animation.png")
-    is_purple = self.bullet_buff
-    frame_size = (50, 50) if not is_purple else (64, 64)
-    new_bullet = Bullet(bullet_x, bullet_y, str(bullet_sprite_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale, frame_size=frame_size)
-    self.bullet_group.add(new_bullet)
+      bullet_x = self.pos[0] + int(40 * self.scale)
+      bullet_y = self.pos[1] + int(25 * self.scale)
+      bullet_sprite_path = (
+      Path("assets") / "character" / "Effects" / "purple_bullet.png" 
+      if self.bullet_buff else Path("assets") / "character" / "Bullet_animation.png")
+      is_purple = self.bullet_buff
+      frame_size = (50, 50) if not is_purple else (64, 64)
+      new_bullet = Bullet(bullet_x, bullet_y, str(bullet_sprite_path), self.BULLET_SPEED, self.unwanted_colors, scale=self.scale, frame_size=frame_size)
+      self.bullet_group.add(new_bullet)
 
 class Bullet(pygame.sprite.Sprite):
   def __init__(self, x, y, image_path, speed, unwanted_colors, scale=1, collision_scale=0.5, frame_size=(50,50)):
-    super().__init__()
+      super().__init__()
 
-    # Bullet Setup
-    self.scale = scale
-    self.collision_scale = collision_scale
-    self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
-    self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
-    self.animation_list = []
-    self.frame_width, self.frame_height = frame_size
-    self.frame_width = 50 if "Bullet_animation" in image_path else 64
-    self.frame_height = 50 if "Bullet_animation" in image_path else 64
-    self.unwanted_colors = unwanted_colors
-    self.cooldown = 100
-    self.frame = 0
-    self.action = 0
-    self.last_update = pygame.time.get_ticks() - self.cooldown - 1
-    self.load_frames([4])
-    self.image = self.animation_list[self.action][self.frame]
-    self.rect = self.image.get_rect(topleft=(x, y))
-    self.speed = speed
-    self.update_collision_rect()
+      # Bullet Setup
+      self.scale = scale
+      self.collision_scale = collision_scale
+      self.sprite_sheet_image = pygame.image.load(image_path).convert_alpha()
+      self.sprite_sheet = SpriteSheet(self.sprite_sheet_image)
+      self.animation_list = []
+      self.frame_width, self.frame_height = frame_size
+      self.frame_width = 50 if "Bullet_animation" in image_path else 64
+      self.frame_height = 50 if "Bullet_animation" in image_path else 64
+      self.unwanted_colors = unwanted_colors
+      self.cooldown = 100
+      self.frame = 0
+      self.action = 0
+      self.last_update = pygame.time.get_ticks() - self.cooldown - 1
+      self.load_frames([4])
+      self.image = self.animation_list[self.action][self.frame]
+      self.rect = self.image.get_rect(topleft=(x, y))
+      self.speed = speed
+      self.update_collision_rect()
 
   def update_collision_rect(self):
-    width = int(self.rect.width * self.collision_scale)
-    height = int(self.rect.height * self.collision_scale)
-    self.collision_rect = pygame.Rect(0, 0, width, height)
-    self.collision_rect.topleft = self.rect.center
+      width = int(self.rect.width * self.collision_scale)
+      height = int(self.rect.height * self.collision_scale)
+      self.collision_rect = pygame.Rect(0, 0, width, height)
+      self.collision_rect.topleft = self.rect.center
 
   def load_frames(self, animation_steps):
-    step_counter = 0
-    for steps in animation_steps:
-      temp_list = []
-      for _ in range(steps):
-        img = self.sprite_sheet.get_image(frame_x=step_counter, frame_width=self.frame_width,
-            frame_height=self.frame_height, scale=self.scale, colours=self.unwanted_colors)
-        temp_list.append(img)
-        step_counter += 1
-      self.animation_list.append(temp_list)
+      step_counter = 0
+      for steps in animation_steps:
+          temp_list = []
+          for _ in range(steps):
+              img = self.sprite_sheet.get_image(frame_x=step_counter, frame_width=self.frame_width,
+                  frame_height=self.frame_height, scale=self.scale, colours=self.unwanted_colors)
+              temp_list.append(img)
+              step_counter += 1
+          self.animation_list.append(temp_list)
 
   def update(self):
       self.rect.x += self.speed
@@ -1415,8 +1416,8 @@ class EffectManager():
     now = pygame.time.get_ticks()
     for key, effect in self.effects.items():
       if key == "wind_screen":
-        self.apply_wind_effect()
-        continue
+          self.apply_wind_effect()
+          continue
 
       if effect["active"]:
         elapsed = now - effect["start_time"]
@@ -1425,22 +1426,22 @@ class EffectManager():
           effect["cleanup"]()
           continue
 
-      if key == "poisoned":
-        self.poisoned()
-        continue
+        if key == "poisoned":
+          self.poisoned()
+          continue
 
-      if not effect["frames"]:
-        continue
+        if not effect["frames"]:
+          continue
 
-      if now - effect.get("last_update", 0) > effect["cooldown"]:
-        effect["index"] = (effect["index"] + 1) % len(effect["frames"])
-        effect["last_update"] = now
+        if now - effect.get("last_update", 0) > effect["cooldown"]:
+          effect["index"] = (effect["index"] + 1) % len(effect["frames"])
+          effect["last_update"] = now
 
-      if self.finn_ref:
-        frame = effect["frames"][effect["index"]]
-        x = self.finn_ref.rect.centerx - frame.get_width() // 2
-        y = self.finn_ref.rect.centery - frame.get_height() // 2
-        screen.blit(frame, (x, y))
+        if self.finn_ref:
+          frame = effect["frames"][effect["index"]]
+          x = self.finn_ref.rect.centerx - frame.get_width() // 2
+          y = self.finn_ref.rect.centery - frame.get_height() // 2
+          screen.blit(frame, (x, y))
 
   def apply_wind_effect(self):
     wind = self.effects["wind_screen"]
@@ -1514,7 +1515,7 @@ while running:
 
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
-      running = False
+        running = False
     scene.mouse.get_input(event)
     scene.dialogue.handle_input(event)
     scene.inventory.handle_click(event)
