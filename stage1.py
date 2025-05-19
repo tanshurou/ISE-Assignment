@@ -55,6 +55,9 @@ game_state = "menu"  # Other states: "username_input", "cutscene", "playing", "l
 menu_bg = pygame.image.load("assets/stage_1_bg/mainmenu.png").convert()
 menu_bg = pygame.transform.scale(menu_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
+tutorial_image = pygame.image.load("assets/stage_1_bg/Tutorial.png").convert_alpha()
+tutorial_image = pygame.transform.scale(tutorial_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
 class Button:
   def __init__(self, x, y, image=None, scale=1, text="", font=None, text_color=(111, 78, 55)):
       if image:
@@ -102,6 +105,7 @@ start_button = Button(900, 300, image=None, text="PLAY", font=large_font, text_c
 leaderboard_button = Button(900, 400, image=None, text="LEADERBOARD", font=large_font, text_color=(255, 220, 140))
 exit_button = Button(900, 500, image=None, text="EXIT", font=large_font, text_color=(255, 220, 140))
 back_button = Button(50, 650, image=None, text="BACK", font=large_font, text_color=(255, 220, 140))
+next_button = Button(1050, 650, image=None, text="NEXT", font=large_font, text_color=(255, 220, 140))
 
 class Score():
   def __init__(self):
@@ -1622,63 +1626,59 @@ while running:
   clock.tick(FPS)
 
   for event in pygame.event.get():
-      if event.type == pygame.QUIT:
-          running = False
-      scene.mouse.get_input(event)
+    if event.type == pygame.QUIT:
+      running = False
+    scene.mouse.get_input(event)
 
-      # === Handle input depending on game state ===
-      if game_state == "menu":
-          start_button.clicked = False
-          leaderboard_button.clicked = False
-          exit_button.clicked = False
+    # === Handle input depending on game state ===
+    if game_state == "menu":
+      start_button.clicked = False
+      leaderboard_button.clicked = False
+      exit_button.clicked = False
 
-      elif game_state == "username_input":
-          scene.leaderboard.get_input(event)
+    elif game_state == "username_input":
+      scene.leaderboard.get_input(event)
 
-      elif game_state == "playing":
-          if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                scene.paused = not scene.paused
-                if scene.paused:
-                  scene.pause_start_time = pygame.time.get_ticks()
-                  scene.timer_active = False
-                  pygame.mixer.pause()
-                else:
-                  paused_duration = pygame.time.get_ticks() - scene.pause_start_time
-                  scene.total_paused_time += paused_duration
-                  scene.timer_active = True
-                  pygame.mixer.unpause()
-
-            elif event.key == pygame.K_r and scene.game_over:
-              scene = Scenes()
-
-              # Reset game state and timer flags
-              game_state = "playing"
-              scene.timer_start = pygame.time.get_ticks()
-              scene.warmup_start = pygame.time.get_ticks()
-              scene.game_started = True
-              scene.in_warmup = True
-              scene.game_over = False
-              scene.game_finished = False
-              scene.total_paused_time = 0
-
-              # Restart background sound
-              scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
-              scene.running_sound.play(loops=-1)
-              scene.running_sound.set_volume(0.5)
-              continue
-
+    elif game_state == "playing":
+      if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+          scene.paused = not scene.paused
           if scene.paused:
-              screen.fill((0, 0, 0))
-              pause_font = large_font.render("PAUSED", True, (255, 255, 255))
-              screen.blit(pause_font, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 30))
-              pygame.display.update()
-              continue
-
+            scene.pause_start_time = pygame.time.get_ticks()
+            scene.timer_active = False
+            pygame.mixer.pause()
           else:
-            scene.dialogue.handle_input(event)
-            scene.inventory.handle_click(event)
-            scene.finn.handle_input(event)
+            paused_duration = pygame.time.get_ticks() - scene.pause_start_time
+            scene.total_paused_time += paused_duration
+            scene.timer_active = True
+            pygame.mixer.unpause()
+
+        elif event.key == pygame.K_r and scene.game_over:
+          scene = Scenes()
+          game_state = "playing"
+          scene.timer_start = pygame.time.get_ticks()
+          scene.warmup_start = pygame.time.get_ticks()
+          scene.game_started = True
+          scene.in_warmup = True
+          scene.game_over = False
+          scene.game_finished = False
+          scene.total_paused_time = 0
+          scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+          scene.running_sound.play(loops=-1)
+          scene.running_sound.set_volume(0.5)
+          continue
+
+      if scene.paused:
+        screen.fill((0, 0, 0))
+        pause_font = large_font.render("PAUSED", True, (255, 255, 255))
+        screen.blit(pause_font, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 30))
+        pygame.display.update()
+        continue
+
+      else:
+        scene.dialogue.handle_input(event)
+        scene.inventory.handle_click(event)
+        scene.finn.handle_input(event)
 
   # === Update screen depending on game state ===
   if game_state == "menu":
@@ -1719,17 +1719,20 @@ while running:
     screen.blit(cutscene_font, (350, 350))
     pygame.display.update()
     pygame.time.delay(2000)
+    game_state = "tutorial"
 
-    # Start game
-    scene.timer_start = pygame.time.get_ticks()
-    scene.warmup_start = pygame.time.get_ticks()
-    scene.game_started = True
-    scene.in_warmup = True
-
-    scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
-    scene.running_sound.play(loops=-1)
-    scene.running_sound.set_volume(0.5)
-    game_state = "playing"
+  elif game_state == "tutorial":
+    screen.blit(tutorial_image, (0, 0))
+    if next_button.draw(screen):
+      # Start game
+      scene.timer_start = pygame.time.get_ticks()
+      scene.warmup_start = pygame.time.get_ticks()
+      scene.game_started = True
+      scene.in_warmup = True
+      scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+      scene.running_sound.play(loops=-1)
+      scene.running_sound.set_volume(0.5)
+      game_state = "playing"
 
   elif game_state == "leaderboard":
     screen.fill((0, 0, 0))
