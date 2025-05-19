@@ -1,13 +1,9 @@
 import math
 import pygame
-from pathlib import Path
-from utilities import resizeObject
-
 import random
-from utilities import getImage
 
-import pygame.mixer
-from PIL import Image
+from pathlib import Path
+from utilities import resizeObject,getImage
 
 pygame.init()
 
@@ -17,7 +13,6 @@ FPS = 60
 SCREEN_WIDTH = 1300
 SCREEN_HEIGHT = 736
 
-white = (255,255,255)
 brown = (111, 78, 55)
 
 screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
@@ -595,7 +590,6 @@ class DialogueBox():
     dialogue_box_path = Path("assets") / "ui_elements" / "Sprite sheets" / "Dialouge UI" / "Premade dialog box  big.png"
     dialogue_box = pygame.image.load(dialogue_box_path)
     self.dialogue_img = resizeObject(dialogue_box, 3)
-    self.text_y = 300
     self.script = []
     self.counter = 0
     self.active_text = 0
@@ -701,7 +695,6 @@ class DistanceTracker():
     self.distance_covered = -650
     self.milestone_tracker = 0
     self.signboard_img = signboard
-    self.distance_tracker_img = distance_tracker
     self.signboard_x = SCREEN_WIDTH
     self.milestone_font = "start"
     self.signboard_active = False
@@ -798,9 +791,7 @@ class Scenes():
     self.potion.mushroom_group = self.mushroom.mushroom_group
     self.potion.fence_group = self.fence.fence_group
 
-  def emptyBg(self, speed):
-      self.scroll_speed = speed
-      offset_x, offset_y = self.get_shake_offset()
+  def emptyBg(self, speed, offset_x=0, offset_y=0): 
       for i in range(0, 3):
           screen.blit(self.stage1_bg_img, (i * self.stage1_bg_img.get_width() - 70 + self.scrolled + offset_x, -60 + offset_y))
       self.scrolled -= self.scroll_speed
@@ -811,6 +802,7 @@ class Scenes():
   def level1(self, speed, spawn_mushroom, num_of_mushroom = 1):
     self.scroll_speed = speed
     self.emptyBg(speed)
+    offset_x, offset_y = self.get_shake_offset()
     #display UI
     screen.blit(chara_board, (30 + offset_x, 30 + offset_y))
     screen.blit(chara_frame, (55 + offset_x, 45 + offset_y)) 
@@ -820,12 +812,7 @@ class Scenes():
       self.timer_start = pygame.time.get_ticks()
       self.timer_active = False
       self.running_sound.stop()
-      if self.game_finished:
-        self.leaderboard.get_username()
-        self.leaderboard.load_file()
-        self.leaderboard.sort()
-        self.leaderboard.show_leaderboard()
-
+      
     #finn potrait
     if not self.game_over and not self.game_finished:
       finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
@@ -844,7 +831,6 @@ class Scenes():
       self.inventory.handle_hover()
       self.mouse.draw()    #DELETE LTR
       self.potion.pick_up_potion(self.finn)
-      self.finn.update
       self.finn.draw(screen)
 
       if self.finn.health_bar.current_health <= 0:
