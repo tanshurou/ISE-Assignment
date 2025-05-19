@@ -50,6 +50,59 @@ distance_tracker = resizeObject(distance_tracker, 5.5)
 inventory_img = pygame.image.load(inventory_path)
 inventory_img = resizeObject(inventory_img, 2)
 
+#  Main Menu and Cutscene Variable
+game_state = "menu"  # Other states: "username_input", "cutscene", "playing", "leaderboard"
+menu_bg = pygame.image.load("assets/stage_1_bg/mainmenu.png").convert()
+menu_bg = pygame.transform.scale(menu_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+class Button:
+  def __init__(self, x, y, image=None, scale=1, text="", font=None, text_color=(111, 78, 55)):
+      if image:
+        width = image.get_width()
+        height = image.get_height()
+        self.image = pygame.transform.scale(image, (int(width * scale), int(height * scale)))
+        self.rect = self.image.get_rect(topleft=(x, y))
+      else:
+        self.image = None
+        self.rect = pygame.Rect(x, y, 200, 40)
+
+      self.clicked = False
+      self.text = text
+      self.font = font
+      self.text_color = text_color
+      if self.text and self.font:
+        self.text_surf = self.font.render(self.text, True, self.text_color)
+        self.text_rect = self.text_surf.get_rect(midleft=(self.rect.x + 20, self.rect.centery))
+      else:
+        self.text_surf = None
+
+  def draw(self, surface):
+    action = False
+    mouse_pos = pygame.mouse.get_pos()
+
+    if self.rect.collidepoint(mouse_pos):
+      if pygame.mouse.get_pressed()[0] and not self.clicked:
+        self.clicked = True
+        action = True
+    if not pygame.mouse.get_pressed()[0]:
+      self.clicked = False
+
+    if self.image:
+        surface.blit(self.image, (self.rect.x, self.rect.y))
+
+    if self.text_surf:
+      outline_color = (100, 80, 50)
+      for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        outline = self.font.render(self.text, True, outline_color)
+        surface.blit(outline, self.text_rect.move(dx, dy))
+      surface.blit(self.text_surf, self.text_rect)
+    return action
+
+start_button = Button(900, 300, image=None, text="PLAY", font=large_font, text_color=(255, 220, 140))
+leaderboard_button = Button(900, 400, image=None, text="LEADERBOARD", font=large_font, text_color=(255, 220, 140))
+exit_button = Button(900, 500, image=None, text="EXIT", font=large_font, text_color=(255, 220, 140))
+back_button = Button(50, 650, image=None, text="BACK", font=large_font, text_color=(255, 220, 140))
+
 class Score():
   def __init__(self):
     self.name = None
@@ -654,7 +707,7 @@ class Scenes():
     self.scroll_speed = 3
     self.scrolled = 0
     self.speed_milestone = 300
-    self.max_base_speed = 8
+    self.max_base_speed = 10
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
@@ -668,8 +721,6 @@ class Scenes():
     self.effects.set_finn(self.finn)
 
     self.clock = pygame.time.Clock()
-    self.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
-    self.running_sound.play(loops=-1)
     self.game_finished = False
     self.game_over = False
     self.paused = False
@@ -679,7 +730,14 @@ class Scenes():
     self.timer_active = True
     self.pause_start_time = 0
     self.total_paused_time = 0
+    self.game_started = False
+    self.warmup_duration = 2000
+    self.warmup_start = None
+    self.in_warmup = True
     self.timer_font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 24)
+
+    self.menu_music = pygame.mixer.Sound(Path("assets") / "audio" / "Intro.mp3")
+    self.menu_music.set_volume(0.5)
     
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -704,6 +762,7 @@ class Scenes():
   
   def level1(self, speed, spawn_mushroom, num_of_mushroom = 1):
     self.scroll_speed = speed
+    self.emptyBg(speed)
     #display UI
     screen.blit(chara_board, (30, 30))
     screen.blit(chara_frame, (55, 45))
@@ -751,12 +810,14 @@ class Scenes():
 
       # Smoothly update Finn's base speed toward the max base speed
       target_base_speed = self.max_base_speed
-      self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.001
+      self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.01
       if self.effects.effects["speed_boost"]["active"]:
           target_scroll_speed = self.finn.base_speed * 2
+      elif self.finn.running and self.finn.stamina_bar.current_stamina > 0:
+          target_scroll_speed = self.finn.base_speed * self.finn.run_multiplier
       else:
           target_scroll_speed = self.finn.base_speed
-      self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.01
+      self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.1
 
     # Game Finished 
     if self.game_finished and not self.game_over:
@@ -778,8 +839,8 @@ class Scenes():
         screen.blit(restart_text, restart_rect)
 
     # === STOPWATCH DISPLAY ===
-    if self.timer_active:
-      self.elapsed_time = pygame.time.get_ticks() - self.timer_start - self.total_paused_time
+    if self.timer_active and self.game_started:
+        self.elapsed_time = pygame.time.get_ticks() - self.timer_start - self.total_paused_time
     seconds = self.elapsed_time // 1000
     minutes = seconds // 60
     remaining_seconds = seconds % 60
@@ -1555,55 +1616,133 @@ class EffectManager():
 
 scene = Scenes()
 running = True
-#start
+
 while running:
   pygame.mouse.set_visible(False)
   clock.tick(FPS)
 
   for event in pygame.event.get():
-    if event.type == pygame.QUIT:
+      if event.type == pygame.QUIT:
+          running = False
+      scene.mouse.get_input(event)
+
+      # === Handle input depending on game state ===
+      if game_state == "menu":
+          start_button.clicked = False
+          leaderboard_button.clicked = False
+          exit_button.clicked = False
+
+      elif game_state == "username_input":
+          scene.leaderboard.get_input(event)
+
+      elif game_state == "playing":
+          if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                scene.paused = not scene.paused
+                if scene.paused:
+                  scene.pause_start_time = pygame.time.get_ticks()
+                  scene.timer_active = False
+                  pygame.mixer.pause()
+                else:
+                  paused_duration = pygame.time.get_ticks() - scene.pause_start_time
+                  scene.total_paused_time += paused_duration
+                  scene.timer_active = True
+                  pygame.mixer.unpause()
+
+            elif event.key == pygame.K_r and scene.game_over:
+              scene = Scenes()
+
+              # Reset game state and timer flags
+              game_state = "playing"
+              scene.timer_start = pygame.time.get_ticks()
+              scene.warmup_start = pygame.time.get_ticks()
+              scene.game_started = True
+              scene.in_warmup = True
+              scene.game_over = False
+              scene.game_finished = False
+              scene.total_paused_time = 0
+
+              # Restart background sound
+              scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+              scene.running_sound.play(loops=-1)
+              scene.running_sound.set_volume(0.5)
+              continue
+
+          if scene.paused:
+              screen.fill((0, 0, 0))
+              pause_font = large_font.render("PAUSED", True, (255, 255, 255))
+              screen.blit(pause_font, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 30))
+              pygame.display.update()
+              continue
+
+          else:
+            scene.dialogue.handle_input(event)
+            scene.inventory.handle_click(event)
+            scene.finn.handle_input(event)
+
+  # === Update screen depending on game state ===
+  if game_state == "menu":
+    screen.fill((0, 0, 0))
+    screen.blit(menu_bg, (0, 0))
+    if not pygame.mixer.get_busy():
+      scene.menu_music.play(loops=-1)
+
+    if start_button.draw(screen):
+      scene.menu_music.stop()
+      game_state = "username_input"
+      scene.leaderboard.accepting_username = True
+      scene.leaderboard.done_accepting_username = False
+      scene.leaderboard.username = ""
+
+    if leaderboard_button.draw(screen):
+      scene.menu_music.stop()
+      game_state = "leaderboard"
+
+    if exit_button.draw(screen):
       running = False
 
-    # Pause Game By Using ESC to Stop Everything
-    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-        scene.paused = not scene.paused
-        if scene.paused:
-            scene.pause_start_time = pygame.time.get_ticks()
-            scene.timer_active = False
-            pygame.mixer.pause()
-        else:
-            paused_duration = pygame.time.get_ticks() - scene.pause_start_time
-            scene.total_paused_time += paused_duration
-            scene.timer_active = True
-            pygame.mixer.unpause()
+  elif game_state == "username_input":
+    screen.fill((0, 0, 0))
+    scene.leaderboard.get_username()
+    if scene.leaderboard.done_accepting_username:
+      game_state = "cutscene"
+    if back_button.draw(screen):
+      scene.menu_music.play(loops=-1)
+      game_state = "menu"
+      scene.leaderboard.accepting_username = False
+      scene.leaderboard.done_accepting_username = False
+      scene.leaderboard.username = ""
 
-    scene.mouse.get_input(event)
+  elif game_state == "cutscene":
+    screen.fill((0, 0, 0))
+    cutscene_font = large_font.render("Cutscene Playing...", True, (255, 255, 255))
+    screen.blit(cutscene_font, (350, 350))
+    pygame.display.update()
+    pygame.time.delay(2000)
 
-    if scene.paused:
-      continue
+    # Start game
+    scene.timer_start = pygame.time.get_ticks()
+    scene.warmup_start = pygame.time.get_ticks()
+    scene.game_started = True
+    scene.in_warmup = True
 
-    if scene.game_finished:
-      scene.leaderboard.get_input(event)
+    scene.running_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game Running Sound Effect.mp3")
+    scene.running_sound.play(loops=-1)
+    scene.running_sound.set_volume(0.5)
+    game_state = "playing"
 
-    if not scene.game_finished:
-      scene.dialogue.handle_input(event)
-      scene.inventory.handle_click(event)
-      scene.finn.handle_input(event)
+  elif game_state == "leaderboard":
+    screen.fill((0, 0, 0))
+    scene.leaderboard.show_leaderboard()
+    if back_button.draw(screen):
+      game_state = "menu"
 
-    if scene.game_over:
-      if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-        scene = Scenes()
-        continue
+  elif game_state == "playing":
+    if not scene.paused:
+      scene.finn.update()
+      scene.level1(speed=scene.scroll_speed, spawn_mushroom=True, num_of_mushroom=2)
 
-  if not scene.paused:
-    scroll_speed = min(scene.finn.speed, 15)
-    scene.emptyBg(scroll_speed)
-    scene.level1(scroll_speed, True, 2)
-    scene.finn.update()
-  else:
-    pause_text = large_font.render("PAUSED", True, brown)
-    screen.blit(pause_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 20))
-
+  scene.mouse.draw()
   pygame.display.update()
 
 pygame.quit()
