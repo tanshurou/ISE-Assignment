@@ -1,8 +1,6 @@
 import math
 import pygame
 from pathlib import Path
-
-import pygame.locals
 from utilities import resizeObject
 
 import random
@@ -58,6 +56,33 @@ menu_bg = pygame.transform.scale(menu_bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
 tutorial_image = pygame.image.load("assets/stage_1_bg/Tutorial.png").convert_alpha()
 tutorial_image = pygame.transform.scale(tutorial_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
 
+cutscene1_img = pygame.image.load("assets/stage_1_bg/cutscene1.png").convert()
+cutscene2_img = pygame.image.load("assets/stage_1_bg/cutscene2.png").convert()
+cutscene3_img = pygame.image.load("assets/stage_1_bg/cutscene3.png").convert()
+
+cutscene1_img = pygame.transform.scale(cutscene1_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+cutscene2_img = pygame.transform.scale(cutscene2_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+cutscene3_img = pygame.transform.scale(cutscene3_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
+class Snowflake(pygame.sprite.Sprite):
+  def __init__(self):
+    super().__init__()
+    self.x = random.randint(0, SCREEN_WIDTH)
+    self.y = random.randint(-50, -10)
+    self.speed_y = random.uniform(1, 3)
+    self.size = random.randint(2, 4)
+    self.color = (255, 255, 255)
+
+  def update(self):
+    self.y += self.speed_y
+    if self.y > SCREEN_HEIGHT:
+        self.y = random.randint(-50, -10)
+        self.x = random.randint(0, SCREEN_WIDTH)
+
+  def draw(self, surface):
+    pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), self.size)
+
 class Button:
   def __init__(self, x, y, image=None, scale=1, text="", font=None, text_color=(111, 78, 55)):
       if image:
@@ -105,7 +130,7 @@ start_button = Button(900, 300, image=None, text="PLAY", font=large_font, text_c
 leaderboard_button = Button(900, 400, image=None, text="LEADERBOARD", font=large_font, text_color=(255, 220, 140))
 exit_button = Button(900, 500, image=None, text="EXIT", font=large_font, text_color=(255, 220, 140))
 back_button = Button(50, 650, image=None, text="BACK", font=large_font, text_color=(255, 220, 140))
-next_button = Button(1050, 650, image=None, text="NEXT", font=large_font, text_color=(255, 220, 140))
+next_button = Button(1100, 650, image=None, text="NEXT", font=large_font, text_color=(255, 220, 140))
 
 class Score():
   def __init__(self):
@@ -586,79 +611,87 @@ class DialogueBox():
   def draw(self, script_dict):
     self.script = script_dict
     character = script_dict[self.active_text]["speaker"]
-    line = script_dict[self.active_text]["line"]
+    full_line = script_dict[self.active_text]["line"]
 
-    #set character potrait
+    if character == "Ice King" and not scene.snow_active:
+      scene.snow_active = True
+      scene.shake_duration = 1500
+      scene.shake_start_time = pygame.time.get_ticks()
+      scene.shake_intensity = 10
+
+    # Set potrait image based on speaker
     potrait_path = ""
     if character == "Finn":
-      potrait_path = Path("assets") / "character" / "Finn Potrait.png"
+        potrait_path = Path("assets") / "character" / "Finn Potrait.png"
     elif character == "Ice King":
-      potrait_path = Path("assets") / "character" / "Ice King Potrait.png"
+        potrait_path = Path("assets") / "character" / "Ice King Potrait.png"
     elif character == "Princess Bubblegum":
-      potrait_path = Path("assets") / "character" / "Princess Bubblegum Potrait.png"
+        potrait_path = Path("assets") / "character" / "Princess Bubblegum Potrait.png"
     elif character == "Jake":
-       potrait_path = Path("assets") / "character" / "Jake Potrait.png"
+        potrait_path = Path("assets") / "character" / "Jake Potrait.png"
+    else:
+        potrait_path = Path("assets") / "character" / "Unknown Potrait.png"
 
-    img = Image.open(potrait_path)
-    img.save(potrait_path, icc_profile=None)
     potrait_img = pygame.image.load(potrait_path)
     potrait_img = resizeObject(potrait_img, 0.6)
-    
-    #setting up fonts
+
     font_path = Path("assets") / "font" / "PressStart2P.ttf"
     name_font = pygame.font.Font(font_path, 26)
     text_font = pygame.font.Font(font_path, 18)
 
-    #only runs when set to visible
     if self.visible:
-      speed = 3 #type writer effect speed
+        speed = 3  # characters per update
+        character_name = name_font.render(character, True, brown)
+        screen.blit(self.dialogue_img, (194, 540))
+        screen.blit(character_name, (390, 565))
+        screen.blit(potrait_img, (203, 550))
 
+        # Reveal characters gradually
+        visible_text = full_line[0:self.counter // speed]
 
-      #render character name, dialogue box, character potrait
-      character_name = name_font.render(character, True, brown)
-      screen.blit(self.dialogue_img, (194, 540))
-      screen.blit(character_name, (390,565))
-      screen.blit(potrait_img, (203, 550))
+        # === Proper word wrapping ===
+        max_width = 700
+        words = visible_text.split(" ")
+        lines = []
+        current_line = ""
+        for word in words:
+            test_line = current_line + word + " "
+            test_surface = text_font.render(test_line, True, brown)
+            if test_surface.get_width() > max_width:
+                lines.append(current_line)
+                current_line = word + " "
+            else:
+                current_line = test_line
+        if current_line:
+            lines.append(current_line)
 
-      #preprocess text for warping
-      words = line.split(" ")
-      lines = []
-      line = ""
-      max_width = 700
+        # Draw lines
+        for i, l in enumerate(lines):
+            text = text_font.render(l, True, brown)
+            screen.blit(text, (400, 627 + i * 24))  # Adjust vertical spacing if needed
 
-      for word in words:
-          test_line = line + word + " "
-          test_surface = text_font.render(test_line, True, brown)
-          if test_surface.get_width() > max_width:
-              lines.append(line)
-              line = word + " "
-          else:
-              line = test_line
-      if line:
-          lines.append(line)
-
-      #updating counter
-      if self.counter < speed * len(line):
-          self.counter += 1
-          if self.counter > self.last_char_count and self.counter % 6 == 0:
-            self.sound_effect.play()
-      elif self.counter >= speed * len(line):
-          self.done = True
-
-      text = text_font.render(line[0:self.counter // speed], True, brown)  
-      screen.blit(text, (400, 627))
-
+        # === Update counter & sound ===
+        if self.counter < speed * len(full_line):
+            self.counter += 1
+            if self.counter > self.last_char_count and self.counter % 6 == 0:
+                self.sound_effect.play()
+        elif self.counter >= speed * len(full_line):
+            self.done = True
+        
+        if scene.snow_active:
+          for flake in scene.snowflakes:
+              flake.update()
+              flake.draw(screen)
 
   def handle_input(self, event):
-      if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_RETURN and self.done:
+    if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_RETURN and self.done:
           if self.active_text < len(self.script) - 1:
               self.active_text += 1
               self.counter = 0
               self.done = False
           else:
-              self.visible = False 
-
+              self.visible = False
 
 class DistanceTracker():
   def __init__(self):
@@ -742,6 +775,17 @@ class Scenes():
 
     self.menu_music = pygame.mixer.Sound(Path("assets") / "audio" / "Intro.mp3")
     self.menu_music.set_volume(0.5)
+
+    self.dialogue.visible = True
+    self.dialogue.done = False
+    self.dialogue.active_text = 0
+    self.dialogue.counter = 0
+
+    self.shake_intensity = 0
+    self.shake_duration = 0
+    self.shake_start_time = 0
+    self.snowflakes = [Snowflake() for _ in range(60)]
+    self.snow_active = False
     
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -755,21 +799,21 @@ class Scenes():
     self.potion.fence_group = self.fence.fence_group
 
   def emptyBg(self, speed):
-    self.scroll_speed = speed
-    for i in range(0,3):
-      screen.blit(self.stage1_bg_img, (i * self.stage1_bg_img.get_width() - 70 + self.scrolled, -60))
+      self.scroll_speed = speed
+      offset_x, offset_y = self.get_shake_offset()
+      for i in range(0, 3):
+          screen.blit(self.stage1_bg_img, (i * self.stage1_bg_img.get_width() - 70 + self.scrolled + offset_x, -60 + offset_y))
+      self.scrolled -= self.scroll_speed
 
-    self.scrolled -= self.scroll_speed
+      if abs(self.scrolled) > self.stage1_bg_img.get_width():
+          self.scrolled = 0
 
-    if abs(self.scrolled) > self.stage1_bg_img.get_width():
-      self.scrolled = 0
-  
   def level1(self, speed, spawn_mushroom, num_of_mushroom = 1):
     self.scroll_speed = speed
     self.emptyBg(speed)
     #display UI
-    screen.blit(chara_board, (30, 30))
-    screen.blit(chara_frame, (55, 45))
+    screen.blit(chara_board, (30 + offset_x, 30 + offset_y))
+    screen.blit(chara_frame, (55 + offset_x, 45 + offset_y)) 
     if self.distance.distance_covered * 0.05 >= 3000 and not self.game_finished:
       self.game_finished = True
       self.timer_active = True
@@ -804,8 +848,8 @@ class Scenes():
       self.finn.draw(screen)
 
       if self.finn.health_bar.current_health <= 0:
-          self.game_over = True
-          self.timer_active = False
+        self.game_over = True
+        self.timer_active = False
 
       self.mushroom.hit(self.finn.bullet_group, self.finn.bullet_buff)
       self.mushroom.collide(self.finn)
@@ -830,17 +874,17 @@ class Scenes():
     
     # Player Died
     if self.game_over and not self.game_finished:
-        font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 40)
-        game_over_text = font.render("GAME OVER", True, (255, 0, 0))
-        restart_text = font.render("Press R to Restart", True, (255, 255, 255))
-        self.timer_active = False
-        self.running_sound.stop()
+      font = pygame.font.Font(Path("assets") / "font" / "PressStart2P.ttf", 40)
+      game_over_text = font.render("GAME OVER", True, (255, 0, 0))
+      restart_text = font.render("Press R to Restart", True, (255, 255, 255))
+      self.timer_active = False
+      self.running_sound.stop()
 
-        game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
-        restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
+      game_over_rect = game_over_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+      restart_rect = restart_text.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 20))
 
-        screen.blit(game_over_text, game_over_rect)
-        screen.blit(restart_text, restart_rect)
+      screen.blit(game_over_text, game_over_rect)
+      screen.blit(restart_text, restart_rect)
 
     # === STOPWATCH DISPLAY ===
     if self.timer_active and self.game_started:
@@ -851,18 +895,35 @@ class Scenes():
     timer_text = self.timer_font.render(f"{minutes:02}:{remaining_seconds:02}", True, brown)
     screen.blit(timer_text, (1100, 130))
 
-    # script = [{"speaker" : "Ice King", "line" : "Helllo"},
-    #           {"speaker" : "Ice King", "line" : "My name is Ice King"},
-    #           {"speaker" : "Princess Bubblegum", "line" : "Helloooo"},
-    #           {"speaker" : "Princess Bubblegum", "line" : "My name is pb!"},
-    #           {"speaker" : "Finn", "line" : "Helloooo"},
-    #           {"speaker" : "Finn", "line" : "My name is Finn!"},
-    #           {"speaker" : "Jake", "line" : "Helloooo"},
-    #           {"speaker" : "Jake", "line" : "My name is Jake!"}]
-    # self.dialogue.draw(script)
-  
-    #get key pressed
-    key_pressed = pygame.key.get_pressed()
+  def get_shake_offset(self):
+    if self.shake_duration <= 0:
+        return 0, 0
+    elapsed = pygame.time.get_ticks() - self.shake_start_time
+    if elapsed > self.shake_duration:
+        self.shake_duration = 0
+        return 0, 0
+    return random.randint(-self.shake_intensity, self.shake_intensity), random.randint(-self.shake_intensity, self.shake_intensity)
+
+  cutscene_script = [
+      {"speaker": "Finn", "line": "Man, what should I get PB for her birthday..."},
+      {"speaker": "Jake", "line": "Hmm, get her something totally mathematical!"},
+      {"speaker": "Finn", "line": "Yeah... but it has to be *special*, you know?"},
+      {"speaker": "Jake", "line": "You could make something — like a sword made of candy!"},
+      {"speaker": "Finn", "line": "Haha, nah. Maybe just something from the heart."},
+      {"speaker": "Finn", "line": "Wait... you're not invited?"},
+      {"speaker": "Jake", "line": "Nah, it’s cool. I told PB I had dog stuff to do."},
+      {"speaker": "Finn", "line": "Alright... I’ll bring her the best gift ever."},
+      {"speaker": "Finn", "line": "Happy Birthday, PB!"},
+      {"speaker": "Princess Bubblegum", "line": "Finn! You came! And... is that a gift?"},
+      {"speaker": "Finn", "line": "Yup! Just for you. Hope you like it."},
+      {"speaker": "Princess Bubblegum", "line": "You're the sweetest, Finn. Thank you."},
+      {"speaker": "Princess Bubblegum", "line": "It’s been a while since we hung out like this."},
+      {"speaker": "Finn", "line": "Yeah. I’ve been doing hero stuff, training and stuff."},
+      {"speaker": "Ice King", "line": "PB! You're coming with me!"},
+      {"speaker": "Finn", "line": "ICE KING!? Not on her birthday!"},
+      {"speaker": "Ice King", "line": "Love doesn’t wait, Finn!"},
+      {"speaker": "Finn", "line": "You’re gonna regret this... big time!"}
+  ]
 
 class Fence(pygame.sprite.Sprite):
   def __init__(self, x, y):
@@ -1239,9 +1300,6 @@ class Finn(pygame.sprite.Sprite):
     self.set_finn_action(0)
 
     # Buffs
-    self.health_buff = False
-    self.stamina_buff = False
-    self.speed_buff = False
     self.invincible_buff = False
     self.bullet_buff = False
 
@@ -1693,11 +1751,9 @@ while running:
       scene.leaderboard.accepting_username = True
       scene.leaderboard.done_accepting_username = False
       scene.leaderboard.username = ""
-
     if leaderboard_button.draw(screen):
       scene.menu_music.stop()
       game_state = "leaderboard"
-
     if exit_button.draw(screen):
       running = False
 
@@ -1714,12 +1770,25 @@ while running:
       scene.leaderboard.username = ""
 
   elif game_state == "cutscene":
-    screen.fill((0, 0, 0))
-    cutscene_font = large_font.render("Cutscene Playing...", True, (255, 255, 255))
-    screen.blit(cutscene_font, (350, 350))
-    pygame.display.update()
-    pygame.time.delay(2000)
-    game_state = "tutorial"
+    offset_x, offset_y = scene.get_shake_offset()
+    if scene.dialogue.active_text <= 7:
+        screen.blit(cutscene1_img, (0 + offset_x, 0 + offset_y))
+    elif 8 <= scene.dialogue.active_text <= 13:
+        screen.blit(cutscene2_img, (0 + offset_x, 0 + offset_y))
+    else:
+        screen.blit(cutscene3_img, (0 + offset_x, 0 + offset_y))
+    scene.dialogue.draw(scene.cutscene_script)
+
+    if scene.dialogue.visible:
+      if next_button.draw(screen) and scene.dialogue.done:
+        scene.dialogue.handle_input(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN))
+
+      if back_button.draw(screen) and scene.dialogue.active_text > 0:
+        scene.dialogue.active_text -= 1
+        scene.dialogue.counter = 0
+        scene.dialogue.done = False
+    else:
+      game_state = "tutorial"
 
   elif game_state == "tutorial":
     screen.blit(tutorial_image, (0, 0))
