@@ -789,7 +789,7 @@ class Scenes():
     self.score_saved = False
 
     self.finisher_line_img = pygame.image.load(Path("assets") / "character" / "finisher_Line.png").convert_alpha()
-    self.finisher_line_x = 2950 / 0.05
+    self.finisher_line_x = 3025 / 0.05
     self.finisher_line_shown = True
 
     # Step 1: Create all manager objects without dependencies first
@@ -818,7 +818,7 @@ class Scenes():
     #display UI
     screen.blit(chara_board, (30 + offset_x, 30 + offset_y))
     screen.blit(chara_frame, (55 + offset_x, 45 + offset_y)) 
-    if not self.game_finished and self.distance.distance_covered * 0.05 >= 2980:
+    if not self.game_finished and self.distance.distance_covered * 0.05 >= 3025:
       self.game_finished = True
       self.timer_active = False
       self.running_sound.stop()
@@ -887,7 +887,7 @@ class Scenes():
       screen.blit(restart_text, restart_rect)
 
     # === FINISHER LINE SHOW ===
-    if self.distance.distance_covered * 0.05 >= 2950 and not self.finisher_line_shown:
+    if self.distance.distance_covered * 0.05 >= 3025 and not self.finisher_line_shown:
         self.finisher_line_shown = True
         self.finisher_line_x = SCREEN_WIDTH
 
