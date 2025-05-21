@@ -313,11 +313,11 @@ class StaminaBar():
 
     for i in range(num_of_full_stamina):
       screen.blit(self.images[0], (self.x, self.y))
-      self.x += 15;
+      self.x += 15
     
     for i in range(num_of_empty_stamina):
       screen.blit(self.images[1], (self.x, self.y))
-      self.x += 15;
+      self.x += 15
 
     self.x = 300
 
@@ -744,7 +744,7 @@ class Scenes():
     self.scroll_speed = 3
     self.scrolled = 0
     self.speed_milestone = 300
-    self.max_base_speed = 10
+    self.max_base_speed = 12
     self.stage1_bg_img = resizeObject(stage1_bg, 1.4)
     self.distance = DistanceTracker()
     self.inventory = InventoryBar()
@@ -787,7 +787,11 @@ class Scenes():
     self.snowflakes = [Snowflake() for _ in range(60)]
     self.snow_active = False
     self.score_saved = False
-    
+
+    self.finisher_line_img = pygame.image.load(Path("assets") / "character" / "finisher_Line.png").convert_alpha()
+    self.finisher_line_x = 2950 / 0.05
+    self.finisher_line_shown = True
+
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
     self.mushroom = MushroomManager(self.effects, None, None)  # Temporarily pass None
@@ -814,10 +818,8 @@ class Scenes():
     #display UI
     screen.blit(chara_board, (30 + offset_x, 30 + offset_y))
     screen.blit(chara_frame, (55 + offset_x, 45 + offset_y)) 
-    if self.distance.distance_covered * 0.05 >= 3000 and not self.game_finished:
+    if not self.game_finished and self.distance.distance_covered * 0.05 >= 2980:
       self.game_finished = True
-      self.timer_active = True
-      self.timer_start = pygame.time.get_ticks()
       self.timer_active = False
       self.running_sound.stop()
       if self.leaderboard.username and not self.score_saved:
@@ -856,14 +858,14 @@ class Scenes():
 
       # Smoothly update Finn's base speed toward the max base speed
       target_base_speed = self.max_base_speed
-      self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.01
+      self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.3
       if self.effects.effects["speed_boost"]["active"]:
-          target_scroll_speed = self.finn.base_speed * 2
+          target_scroll_speed = self.finn.base_speed * 15
       elif self.finn.running and self.finn.stamina_bar.current_stamina > 0:
           target_scroll_speed = self.finn.base_speed * self.finn.run_multiplier
       else:
           target_scroll_speed = self.finn.base_speed
-      self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.1
+      self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.3
 
     # Game Finished 
     if self.game_finished and not self.game_over:
@@ -884,6 +886,15 @@ class Scenes():
       screen.blit(game_over_text, game_over_rect)
       screen.blit(restart_text, restart_rect)
 
+    # === FINISHER LINE SHOW ===
+    if self.distance.distance_covered * 0.05 >= 2950 and not self.finisher_line_shown:
+        self.finisher_line_shown = True
+        self.finisher_line_x = SCREEN_WIDTH
+
+    if self.finisher_line_shown:
+        self.finisher_line_x -= self.scroll_speed
+        screen.blit(self.finisher_line_img, (self.finisher_line_x, 220 + offset_y))
+
     # === STOPWATCH DISPLAY ===
     if self.timer_active and self.game_started:
         self.elapsed_time = pygame.time.get_ticks() - self.timer_start - self.total_paused_time
@@ -903,24 +914,19 @@ class Scenes():
     return random.randint(-self.shake_intensity, self.shake_intensity), random.randint(-self.shake_intensity, self.shake_intensity)
 
   cutscene_script = [
-      {"speaker": "Finn", "line": "Man, what should I get PB for her birthday..."},
-      {"speaker": "Jake", "line": "Hmm, get her something totally mathematical!"},
-      {"speaker": "Finn", "line": "Yeah... but it has to be *special*, you know?"},
-      {"speaker": "Jake", "line": "You could make something — like a sword made of candy!"},
-      {"speaker": "Finn", "line": "Haha, nah. Maybe just something from the heart."},
-      {"speaker": "Finn", "line": "Wait... you're not invited?"},
-      {"speaker": "Jake", "line": "Nah, it’s cool. I told PB I had dog stuff to do."},
-      {"speaker": "Finn", "line": "Alright... I’ll bring her the best gift ever."},
+      {"speaker": "Finn", "line": "What should I get PB for her birthday...?"},
+      {"speaker": "Jake", "line": "Something totally mathematical!"},
+      {"speaker": "Finn", "line": "It has to be special."},
+      {"speaker": "Jake", "line": "Make her a candy sword or something!"},
+      {"speaker": "Finn", "line": "Nah. Maybe something from the heart."},
+      {"speaker": "Jake", "line": "You got this, bro."},
       {"speaker": "Finn", "line": "Happy Birthday, PB!"},
-      {"speaker": "Princess Bubblegum", "line": "Finn! You came! And... is that a gift?"},
-      {"speaker": "Finn", "line": "Yup! Just for you. Hope you like it."},
-      {"speaker": "Princess Bubblegum", "line": "You're the sweetest, Finn. Thank you."},
-      {"speaker": "Princess Bubblegum", "line": "It’s been a while since we hung out like this."},
-      {"speaker": "Finn", "line": "Yeah. I’ve been doing hero stuff"},
-      {"speaker": "Ice King", "line": "PB! You're coming with me!"},
-      {"speaker": "Finn", "line": "ICE KING!? Not on her birthday!"},
-      {"speaker": "Ice King", "line": "Love doesn’t wait, Finn!"},
-      {"speaker": "Finn", "line": "You’re gonna regret this... big time!"}
+      {"speaker": "Princess Bubblegum", "line": "Finn! Is that a gift?"},
+      {"speaker": "Finn", "line": "Yup. Hope you like it."},
+      {"speaker": "Ice King", "line": "PB! You’re coming with me!"},
+      {"speaker": "Finn", "line": "ICE KING!? Not today!"},
+      {"speaker": "Ice King", "line": "Love doesn’t wait!"},
+      {"speaker": "Finn", "line": "You're gonna regret this!"}
   ]
 
 class Fence(pygame.sprite.Sprite):
@@ -1658,7 +1664,7 @@ class EffectManager():
     self.finn_ref.health_bar.heal(6)
 
   def apply_stamina(self):
-    self.finn_ref.stamina_bar.increaseStamina(3)
+    self.finn_ref.stamina_bar.increaseStamina(8)
 
   def enable_blue_buff(self):
     self.finn_ref.base_speed *= 2
@@ -1769,9 +1775,9 @@ while running:
 
   elif game_state == "cutscene":
     offset_x, offset_y = scene.get_shake_offset()
-    if scene.dialogue.active_text <= 7:
+    if scene.dialogue.active_text <= 5:
         screen.blit(cutscene1_img, (0 + offset_x, 0 + offset_y))
-    elif 8 <= scene.dialogue.active_text <= 13:
+    elif 6 <= scene.dialogue.active_text <= 8:
         screen.blit(cutscene2_img, (0 + offset_x, 0 + offset_y))
     else:
         screen.blit(cutscene3_img, (0 + offset_x, 0 + offset_y))
