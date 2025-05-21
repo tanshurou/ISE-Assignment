@@ -163,12 +163,18 @@ class LeaderBoard():
       print("File not found")
   
   def sort(self):
+    def time_to_seconds(time_str):
+        if ":" in time_str:
+            minutes, seconds = map(int, time_str.strip().split(":"))
+            return minutes * 60 + seconds
+        else:
+            return int(float(time_str.strip()))
+
     n = len(self.scores)
     for i in range(n):
-      for j in range(0, n- i - 1):
-        if float(self.scores[j].time) > float(self.scores[j+1].time):
+      for j in range(0, n - i - 1):
+        if time_to_seconds(self.scores[j].time) > time_to_seconds(self.scores[j + 1].time):
           self.scores[j], self.scores[j + 1] = self.scores[j + 1], self.scores[j]
-            
   
   def get_username(self):
     if not self.done_accepting_username:
@@ -182,9 +188,6 @@ class LeaderBoard():
 
       else:
         screen.blit(currently_typing, (405, 350))
-
-
-
 
   def get_input(self, event):
     if self.accepting_username == False:
@@ -204,7 +207,11 @@ class LeaderBoard():
      
   def save_score(self, time):
     with open("leaderboard.txt", "a") as file:
-      file.write(f"\n{self.username},{time}")
+      minutes = time // 60
+      seconds = time % 60
+      formatted_time = f"{minutes:02}:{seconds:02}"
+      file.write(f"\n{self.username},{formatted_time}")
+      file.flush()
 
   def show_leaderboard(self):
     font = large_font.render("Leaderboard", True, brown)
@@ -779,6 +786,7 @@ class Scenes():
     self.shake_start_time = 0
     self.snowflakes = [Snowflake() for _ in range(60)]
     self.snow_active = False
+    self.score_saved = False
     
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -812,7 +820,11 @@ class Scenes():
       self.timer_start = pygame.time.get_ticks()
       self.timer_active = False
       self.running_sound.stop()
-      
+      if self.leaderboard.username and not self.score_saved:
+        total_seconds = self.elapsed_time // 1000
+        self.leaderboard.save_score(total_seconds)
+        self.score_saved = True
+
     #finn potrait
     if not self.game_over and not self.game_finished:
       finn_potrait_path = Path("assets") / "character" / "Finn Potrait.png"
@@ -904,7 +916,7 @@ class Scenes():
       {"speaker": "Finn", "line": "Yup! Just for you. Hope you like it."},
       {"speaker": "Princess Bubblegum", "line": "You're the sweetest, Finn. Thank you."},
       {"speaker": "Princess Bubblegum", "line": "It’s been a while since we hung out like this."},
-      {"speaker": "Finn", "line": "Yeah. I’ve been doing hero stuff, training and stuff."},
+      {"speaker": "Finn", "line": "Yeah. I’ve been doing hero stuff"},
       {"speaker": "Ice King", "line": "PB! You're coming with me!"},
       {"speaker": "Finn", "line": "ICE KING!? Not on her birthday!"},
       {"speaker": "Ice King", "line": "Love doesn’t wait, Finn!"},
