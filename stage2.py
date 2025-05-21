@@ -22,66 +22,66 @@ SPIKE_BLOCK_DIST = 300
 # ------------------------------
 # Resource Paths    
 # ------------------------------
-BASE = "assets\stage2_assets"
+BASE = Path("assets") / "stage2_assets"
 
-background = pygame.image.load(BASE + "Ice_Background.png").convert()
+background = pygame.image.load(BASE / "Ice_Background.png").convert()
 background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 backgroundColor = (0, 0, 0)
 
-finn_sheet           = spritesheet.SpriteSheet(pygame.image.load(BASE + "Finn_Running.png").convert_alpha())
-ice_king_sheet_image = pygame.image.load(BASE + "Ice King movements.png").convert_alpha()
-death                = pygame.image.load(BASE + "ice king death.png").convert_alpha()
-boss_powers          = pygame.image.load(BASE + "snowball effects.png").convert_alpha()
-powers2              = pygame.image.load(BASE + "ice spikes.png").convert_alpha()
-finalpowers          = pygame.image.load(BASE + "ice cubes.png").convert_alpha()
-barrier              = pygame.image.load(BASE + "wall.png").convert_alpha()
-rock_img             = pygame.image.load(BASE + "falling rock.png").convert()
-slash_img            = pygame.image.load(BASE + "sword swing effect.png").convert_alpha()
-hit_img              = pygame.image.load(BASE + "sword hit effect.png").convert_alpha()
-clash_img            = pygame.image.load(BASE + "clashing effect.png").convert_alpha()
-explosion_img        = pygame.image.load(BASE + "explosion effect.png").convert_alpha()
+finn_sheet           = spritesheet.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
+ice_king_sheet_image = pygame.image.load(BASE / "Ice King movements.png").convert_alpha()
+death                = pygame.image.load(BASE / "ice king death.png").convert_alpha()
+boss_powers          = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
+powers2              = pygame.image.load(BASE / "ice spikes.png").convert_alpha()
+finalpowers          = pygame.image.load(BASE / "ice cubes.png").convert_alpha()
+barrier              = pygame.image.load(BASE / "wall.png").convert_alpha()
+rock_img             = pygame.image.load(BASE / "falling rock.png").convert()
+slash_img            = pygame.image.load(BASE / "sword swing effect.png").convert_alpha()
+hit_img              = pygame.image.load(BASE / "sword hit effect.png").convert_alpha()
+clash_img            = pygame.image.load(BASE / "clashing effect.png").convert_alpha()
+explosion_img        = pygame.image.load(BASE / "explosion effect.png").convert_alpha()
 tutorial_images = [
-    pygame.image.load(BASE + "control tutorials.jpg").convert(),
-    pygame.image.load(BASE + "snowball tutorial.png").convert(),
-    pygame.image.load(BASE + "ice spike tutorial.png").convert(),
-    pygame.image.load(BASE + "ice cube tutorial.png").convert()
+    pygame.image.load(BASE / "control tutorials.jpg").convert(),
+    pygame.image.load(BASE / "snowball tutorial.png").convert(),
+    pygame.image.load(BASE / "ice spike tutorial.png").convert(),
+    pygame.image.load(BASE / "ice cube tutorial.png").convert()
 ]
 cutscene_images = [
-    pygame.image.load(BASE + "finn face mountain cutscene.png").convert(),
-    pygame.image.load(BASE + "finn go up mountain cutscene.png").convert(),
-    pygame.image.load(BASE + "finn face ice king cutscene.png").convert()
+    pygame.image.load(BASE / "finn face mountain cutscene.png").convert(),
+    pygame.image.load(BASE / "finn go up mountain cutscene.png").convert(),
+    pygame.image.load(BASE / "finn face ice king cutscene.png").convert()
 ]
 cutscene_images = [pygame.transform.scale(img, (SCREEN_WIDTH, SCREEN_HEIGHT)) for img in cutscene_images]
-final_cutscene = pygame.image.load(BASE + "finn saves PB cutscene.png").convert()
+final_cutscene = pygame.image.load(BASE / "finn saves PB cutscene.png").convert()
 final_cutscene = pygame.transform.scale(final_cutscene, (SCREEN_WIDTH, SCREEN_HEIGHT))
 iceking_health_full  = pygame.transform.scale(
-    pygame.image.load(BASE + "stamina1.png").convert_alpha(), (20, 40)
+    pygame.image.load(BASE / "stamina1.png").convert_alpha(), (20, 40)
 )
 iceking_health_empty = pygame.transform.scale(
-    pygame.image.load(BASE + "stamina2.png").convert_alpha(), (20, 40)
+    pygame.image.load(BASE / "stamina2.png").convert_alpha(), (20, 40)
 )
 rock_img.set_colorkey((0, 0, 0))
 rock_chunk_img = rock_img.convert_alpha()
 rock_chunk_img.fill((100, 200, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
-finn_img             = pygame.image.load(BASE + "finn_icon.PNG").convert_alpha()
+finn_img             = pygame.image.load(BASE / "finn_icon.PNG").convert_alpha()
 finn_icon            = pygame.transform.scale(finn_img, (110, 110))
-ice_king_img         = pygame.image.load(BASE + "iceking_icon.PNG").convert_alpha()
+ice_king_img         = pygame.image.load(BASE / "iceking_icon.PNG").convert_alpha()
 iceking_icon         = pygame.transform.scale(ice_king_img, (110, 110))
-pb_img               = pygame.image.load(BASE + "PB icon.PNG").convert_alpha()
+pb_img               = pygame.image.load(BASE / "PB icon.PNG").convert_alpha()
 pb_icon              = pygame.transform.scale(pb_img, (110, 110))
-dialog_box           = pygame.image.load(BASE + "Premade dialog box medium.png").convert_alpha()
+dialog_box           = pygame.image.load(BASE / "Premade dialog box medium.png").convert_alpha()
 dialogue_box_img     = pygame.transform.scale(dialog_box, (800, 150))
-dialog_font          = pygame.font.Font(BASE + "PressStart2P.ttf", 12)
-tutorial_font        = pygame.font.Font(BASE + "PressStart2P.ttf", 24)
-text_font            = pygame.font.Font(BASE + "PressStart2P.ttf", 18)
+dialog_font          = pygame.font.Font(BASE / "PressStart2P.ttf", 12)
+tutorial_font        = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
+text_font            = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
 # Load Finn’s sword SFX
-sword_swoosh_sound = pygame.mixer.Sound(BASE + "mixkit-metal-hit-woosh-1485.wav")
-sword_hit_sound    = pygame.mixer.Sound(BASE + "mixkit-dagger-woosh-1487.wav")
-metal_strike_sound = pygame.mixer.Sound(BASE + "mixkit-metallic-sword-strike-2160.wav")
+sword_swoosh_sound = pygame.mixer.Sound(BASE / "mixkit-metal-hit-woosh-1485.wav")
+sword_hit_sound    = pygame.mixer.Sound(BASE / "mixkit-dagger-woosh-1487.wav")
+metal_strike_sound = pygame.mixer.Sound(BASE / "mixkit-metallic-sword-strike-2160.wav")
 #Ice King sound effect
-ice_cube_sound = pygame.mixer.Sound(BASE + "Ice Cube sound.mp3")
-ice_ball_sound = pygame.mixer.Sound(BASE + "Ice ball sound.mp3")
-ice_spike_sound = pygame.mixer.Sound(BASE + "Ice Spike sound.mp3")
+ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
+ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
+ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
 
 boss_ss   = spritesheet.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet.SpriteSheet(boss_powers)
@@ -112,12 +112,12 @@ class HealthBar():
         self.y = 50
         self.images = []
         for i in range(1,4):
-            img = pygame.image.load(BASE + f"heart{i}.png").convert_alpha()
+            img = pygame.image.load(BASE / f"heart{i}.png").convert_alpha()
             img = resizeObject(img, 4)
             self.images.append(img)
 
-        self.take_damage_sound_effect = pygame.mixer.Sound(BASE + "take damage.mp3")
-        self.heal_sound_effect        = pygame.mixer.Sound(BASE + "heal.mp3")
+        self.take_damage_sound_effect = pygame.mixer.Sound(BASE / "take damage.mp3")
+        self.heal_sound_effect        = pygame.mixer.Sound(BASE / "heal.mp3")
 
     def draw(self, surf):
         full = self.current_health // 2
@@ -132,7 +132,7 @@ class HealthBar():
             surf.blit(self.images[2], (x, self.y)); x += 40
         health_ratio = self.current_health / self.max_health
         percentage = int(health_ratio * 100)
-        font = pygame.font.Font(BASE + "PressStart2P.ttf", 18)
+        font = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
         text = font.render(f"{percentage}%", True, (255, 255, 255))
         text_rect = text.get_rect(center=(self.x + 120, self.y - 20))
         surf.blit(text, text_rect)
@@ -236,7 +236,7 @@ class IceKing:
                 surf.blit(iceking_health_empty, (x, y))
         
         percentage = int(health_ratio * 100)
-        font = pygame.font.Font(BASE + "PressStart2P.ttf", 18)
+        font = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
         text = font.render(f"{percentage}%", True, (255, 255, 255))
         text_rect = text.get_rect(center=(start_x + (segment_width + spacing) * total_segments // 2, y - 20))
         surf.blit(text, text_rect)
@@ -950,7 +950,7 @@ def phase1(now):
         ice_king_state = "idle"
         animation_frame = 0
         state_timer = now
-        pygame.mixer.music.load(BASE + "chiptune-medium-boss-218095.mp3")
+        pygame.mixer.music.load(BASE / "chiptune-medium-boss-218095.mp3")
         pygame.mixer.music.play(-1)
         phase_dialogue_active = False
 
@@ -1263,7 +1263,7 @@ def reset_game():
     # Queue phase 1 dialogue immediately
     queue_dialogue(battle_dialogue["phase1"])
 
-    pygame.mixer.music.load(BASE + "chiptune-medium-boss-218095.mp3")
+    pygame.mixer.music.load(BASE / "chiptune-medium-boss-218095.mp3")
     pygame.mixer.music.play(-1)
 
 # ------------------------------
@@ -1312,11 +1312,11 @@ while running:
             overlay.fill((0, 0, 0, 180))
             screen.blit(overlay, (0, 0))
 
-            font_big = pygame.font.Font(BASE + "PressStart2P.ttf", 48)
+            font_big = pygame.font.Font(BASE / "PressStart2P.ttf", 48)
             death_text = font_big.render("YOU DIED", True, (255, 0, 0))
             screen.blit(death_text, (SCREEN_WIDTH // 2 - death_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
 
-            font_small = pygame.font.Font(BASE + "PressStart2P.ttf", 18)
+            font_small = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
             tip = font_small.render("Press R to Restart", True, (255, 255, 255))
             screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
 
