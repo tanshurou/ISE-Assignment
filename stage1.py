@@ -789,8 +789,10 @@ class Scenes():
     self.score_saved = False
 
     self.finisher_line_img = pygame.image.load(Path("assets") / "character" / "finisher_Line.png").convert_alpha()
-    self.finisher_line_x = 3025 / 0.05
-    self.finisher_line_shown = True
+    self.finisher_line_x = 3000 / 0.05
+    self.finisher_line_shown = False
+    self.finish_line_sound = pygame.mixer.Sound(Path("assets") / "audio" / "Game_Finish.mp3")
+    self.finish_line_sound_played = False
 
     # Step 1: Create all manager objects without dependencies first
     self.fence = FenceManager(self.scroll_speed)
@@ -818,7 +820,7 @@ class Scenes():
     #display UI
     screen.blit(chara_board, (30 + offset_x, 30 + offset_y))
     screen.blit(chara_frame, (55 + offset_x, 45 + offset_y)) 
-    if not self.game_finished and self.distance.distance_covered * 0.05 >= 3025:
+    if not self.game_finished and self.distance.distance_covered * 0.05 >= 3000:
       self.game_finished = True
       self.timer_active = False
       self.running_sound.stop()
@@ -887,13 +889,23 @@ class Scenes():
       screen.blit(restart_text, restart_rect)
 
     # === FINISHER LINE SHOW ===
-    if self.distance.distance_covered * 0.05 >= 3025 and not self.finisher_line_shown:
-        self.finisher_line_shown = True
-        self.finisher_line_x = SCREEN_WIDTH
-
+    if self.distance.distance_covered * 0.05 >= 2950 and not self.finisher_line_shown:
+      self.finisher_line_shown = True
+      self.finisher_line_x = SCREEN_WIDTH
+      self.finish_line_sound_played = False
     if self.finisher_line_shown:
-        self.finisher_line_x -= self.scroll_speed
-        screen.blit(self.finisher_line_img, (self.finisher_line_x, 220 + offset_y))
+      finisher_rect = self.finisher_line_img.get_rect(topleft=(self.finisher_line_x, 220 + offset_y))
+      screen.blit(self.finisher_line_img, (self.finisher_line_x, 220 + offset_y))
+      self.finisher_line_x -= self.scroll_speed
+      if not self.finish_line_sound_played and self.finn.hitbox.colliderect(finisher_rect):
+        if self.running_sound.get_num_channels() > 0:
+            self.running_sound.stop()
+        self.finish_line_sound.play()
+        self.finish_line_sound_played = True
+      elif self.finish_line_sound_played:
+        pass
+      if self.finisher_line_x + self.finisher_line_img.get_width() < 0:
+        self.finisher_line_shown = False
 
     # === STOPWATCH DISPLAY ===
     if self.timer_active and self.game_started:
