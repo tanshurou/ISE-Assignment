@@ -1,5 +1,5 @@
 import pygame
-import spritesheet
+import spritesheet1
 import random
 import math
 from pathlib import Path
@@ -28,7 +28,7 @@ background = pygame.image.load(BASE / "Ice_Background.png").convert()
 background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
 backgroundColor = (0, 0, 0)
 
-finn_sheet           = spritesheet.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
+finn_sheet           = spritesheet1.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
 ice_king_sheet_image = pygame.image.load(BASE / "Ice King movements.png").convert_alpha()
 death                = pygame.image.load(BASE / "ice king death.png").convert_alpha()
 boss_powers          = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
@@ -83,16 +83,16 @@ ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
 ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
 ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
 
-boss_ss   = spritesheet.SpriteSheet(ice_king_sheet_image)
-abilities = spritesheet.SpriteSheet(boss_powers)
-spikes_ss = spritesheet.SpriteSheet(powers2)
-cubes_ss  = spritesheet.SpriteSheet(finalpowers)
-defeat_ss = spritesheet.SpriteSheet(death)
-wall_ss   = spritesheet.SpriteSheet(barrier)
-swing_ss  = spritesheet.SpriteSheet(slash_img)
-hit_ss    = spritesheet.SpriteSheet(hit_img)
-clash_ss  = spritesheet.SpriteSheet(clash_img)
-explode_ss = spritesheet.SpriteSheet(explosion_img)
+boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
+abilities = spritesheet1.SpriteSheet(boss_powers)
+spikes_ss = spritesheet1.SpriteSheet(powers2)
+cubes_ss  = spritesheet1.SpriteSheet(finalpowers)
+defeat_ss = spritesheet1.SpriteSheet(death)
+wall_ss   = spritesheet1.SpriteSheet(barrier)
+swing_ss  = spritesheet1.SpriteSheet(slash_img)
+hit_ss    = spritesheet1.SpriteSheet(hit_img)
+clash_ss  = spritesheet1.SpriteSheet(clash_img)
+explode_ss = spritesheet1.SpriteSheet(explosion_img)
 
 # ------------------------------
 # Helper to resize images
