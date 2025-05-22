@@ -94,7 +94,12 @@ ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
 ice_spike_sound.set_volume(SFX_VOLUME)
 #Stage 2 cutscene sound effect
 cutscene_drone_sound = pygame.mixer.Sound(BASE / "drone-high-tension-and-suspense-background-162365.mp3")
-cutscene_drone_sound.set_volume(0.3)  # Set volume as you like
+cutscene_drone_sound.set_volume(SFX_VOLUME) 
+dialogue_bgm = pygame.mixer.Sound(BASE / "merx-market-song-33936.mp3")
+dialogue_bgm.set_volume(SFX_VOLUME)
+click_sound = pygame.mixer.Sound(BASE / "ui-button-click-8-341030.mp3")
+click_sound.set_volume(SFX_VOLUME)
+
 
 
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
@@ -1295,6 +1300,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            click_sound.play()
             # 1. Dismiss current dialogue first
             if current_dialogue:
                 current_dialogue = None
@@ -1311,6 +1317,7 @@ while running:
                     current_dialogue = None
                     dialogue_queue.clear()
                     cutscene_dialogue_shown = False
+                    dialogue_bgm.fadeout(1000)
 
             # 3. Handle final cutscene (after defeat)
             elif final_cutscene_active:
@@ -1364,7 +1371,8 @@ while running:
     if cutscene_active:
 
         if not cutscene_sound_playing:
-            cutscene_drone_sound.play(-1)  # loop indefinitely
+            pygame.mixer.music.stop()
+            dialogue_bgm.play(-1)  # Loop dialogue music during cutscene
             cutscene_sound_playing = True
 
         screen.blit(cutscene_images[cutscene_stage], (0, 0))
@@ -1382,6 +1390,10 @@ while running:
         if cutscene_stage == 0 and not cutscene_dialogue_shown and not current_dialogue and not dialogue_queue:
             queue_dialogue(cutscene_dialogue["intro"])
             cutscene_dialogue_shown = True
+
+        if not cutscene_active and cutscene_sound_playing:
+            dialogue_bgm.stop()
+            cutscene_sound_playing = False
 
         pygame.display.flip()
         clock.tick(FPS)
