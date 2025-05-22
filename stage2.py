@@ -15,7 +15,10 @@ SECOND_SOUND_DELAY = 5000  # milliseconds
 pygame.init()
 pygame.mixer.init()
 SFX_VOLUME   = 0.3
-MUSIC_VOLUME = 0.2
+MUSIC_VOLUME = 0.3
+victory_sound_played = False
+fireworks_played = False
+game_over_sound_played = False
 SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Finn vs Ice King Boss")
@@ -99,6 +102,17 @@ dialogue_bgm = pygame.mixer.Sound(BASE / "merx-market-song-33936.mp3")
 dialogue_bgm.set_volume(SFX_VOLUME)
 click_sound = pygame.mixer.Sound(BASE / "ui-button-click-8-341030.mp3")
 click_sound.set_volume(SFX_VOLUME)
+victory_sound = pygame.mixer.Sound(BASE / "orchestral-win-331233.mp3")
+victory_sound.set_volume(MUSIC_VOLUME)  
+fireworks_sound = pygame.mixer.Sound(BASE / "fireworks-29629.mp3")
+fireworks_sound.set_volume(1)  
+game_over_sound = pygame.mixer.Sound(BASE / "kl-peach-game-over-iii-142453.mp3")
+game_over_sound.set_volume(SFX_VOLUME)
+restart_sound = pygame.mixer.Sound(BASE/"button-124476.mp3")
+restart_sound.set_volume(1)
+
+
+
 
 
 
@@ -1233,6 +1247,16 @@ def reset_game():
     global dialogue_start_time, charging_ice_cube, charging_start_time
     global vulnerable_start, phase_dialogue_active, finn_forced_position_x
     global ice_ydir, ice_speed
+    global fireworks_played
+    global cutscene_sound_playing
+    global dialogue_bgm
+    global game_over_sound_played
+    game_over_sound_played = False
+    victory_sound_played = False
+    fireworks_played = False
+    game_over_sound_played = False
+
+
 
     # Reset player
     health_bar = HealthBar()
@@ -1329,11 +1353,16 @@ while running:
                 if tutorial_stage >= len(tutorial_images):
                     tutorial_active = False
         elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            restart_sound.play()
             reset_game()
 
     if game_over:
         if death_screen_time is None:
             death_screen_time = pygame.time.get_ticks()
+        
+        if not game_over_sound_played:
+            game_over_sound.play()
+            game_over_sound_played = True
         elif pygame.time.get_ticks() - death_screen_time > 200:
             # Show death overlay
             overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
@@ -1400,6 +1429,11 @@ while running:
         continue
     if final_cutscene_active:
         screen.blit(final_cutscene, (0, 0))
+        if not victory_sound_played:
+            fireworks_sound.stop()
+            pygame.mixer.music.stop()
+            victory_sound.play()
+            victory_sound_played = True
 
         if current_dialogue:
             draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
@@ -1411,6 +1445,7 @@ while running:
             dialogue_start_time = pygame.time.get_ticks()
 
         elif not final_cutscene_shown:
+            fireworks_sound.stop()
             queue_dialogue(cutscene_dialogue["final"])
             final_cutscene_shown = True
 
@@ -1662,6 +1697,9 @@ while running:
             crack.draw(screen)
 
     if ice_king_state == "dying":
+        if not fireworks_played:
+            fireworks_sound.play()
+            fireworks_played = True
         snowballs.clear()
         ice_cubes.clear()
         warnings.clear()
