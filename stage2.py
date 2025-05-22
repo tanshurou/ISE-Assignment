@@ -12,6 +12,8 @@ SECOND_SOUND_DELAY = 5000  # milliseconds
 # ------------------------------
 pygame.init()
 pygame.mixer.init()
+SFX_VOLUME   = 0.1
+MUSIC_VOLUME = 0.2
 SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Finn vs Ice King Boss")
@@ -76,12 +78,18 @@ tutorial_font        = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
 text_font            = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
 # Load Finn’s sword SFX
 sword_swoosh_sound = pygame.mixer.Sound(BASE / "mixkit-metal-hit-woosh-1485.wav")
+sword_swoosh_sound.set_volume(SFX_VOLUME)
 sword_hit_sound    = pygame.mixer.Sound(BASE / "mixkit-dagger-woosh-1487.wav")
+sword_hit_sound.set_volume(SFX_VOLUME)
 metal_strike_sound = pygame.mixer.Sound(BASE / "mixkit-metallic-sword-strike-2160.wav")
+metal_strike_sound.set_volume(SFX_VOLUME)
 #Ice King sound effect
 ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
+ice_cube_sound.set_volume(SFX_VOLUME)
 ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
+ice_ball_sound.set_volume(SFX_VOLUME)
 ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
+ice_spike_sound.set_volume(SFX_VOLUME)
 
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet1.SpriteSheet(boss_powers)
@@ -117,7 +125,9 @@ class HealthBar():
             self.images.append(img)
 
         self.take_damage_sound_effect = pygame.mixer.Sound(BASE / "take damage.mp3")
+        self.take_damage_sound_effect.set_volume(SFX_VOLUME)
         self.heal_sound_effect        = pygame.mixer.Sound(BASE / "heal.mp3")
+        self.heal_sound_effect.set_volume(SFX_VOLUME)
 
     def draw(self, surf):
         full = self.current_health // 2
@@ -951,6 +961,7 @@ def phase1(now):
         animation_frame = 0
         state_timer = now
         pygame.mixer.music.load(BASE / "chiptune-medium-boss-218095.mp3")
+        pygame.mixer.music.set_volume(MUSIC_VOLUME)
         pygame.mixer.music.play(-1)
         phase_dialogue_active = False
 
@@ -1264,6 +1275,7 @@ def reset_game():
     queue_dialogue(battle_dialogue["phase1"])
 
     pygame.mixer.music.load(BASE / "chiptune-medium-boss-218095.mp3")
+    pygame.mixer.music.set_volume(MUSIC_VOLUME)
     pygame.mixer.music.play(-1)
 
 # ------------------------------
