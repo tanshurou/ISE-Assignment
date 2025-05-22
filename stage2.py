@@ -5,6 +5,8 @@ import math
 from pathlib import Path
 ICEBALL_SECOND_EVENT = pygame.USEREVENT + 1
 SECOND_SOUND_DELAY = 5000  # milliseconds
+
+
 "hello"
 
 # ------------------------------
@@ -90,6 +92,10 @@ ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
 ice_ball_sound.set_volume(SFX_VOLUME)
 ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
 ice_spike_sound.set_volume(SFX_VOLUME)
+#Stage 2 cutscene sound effect
+cutscene_drone_sound = pygame.mixer.Sound(BASE / "drone-high-tension-and-suspense-background-162365.mp3")
+cutscene_drone_sound.set_volume(0.3)  # Set volume as you like
+
 
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet1.SpriteSheet(boss_powers)
@@ -822,6 +828,7 @@ finn_forced_position_x = None
 phase1_dialogue_queued = False
 cutscene_stage = 0
 cutscene_active = True
+cutscene_sound_playing = False
 cutscene_dialogue_shown = False
 final_cutscene_active = False
 final_cutscene_shown = False
@@ -1298,6 +1305,8 @@ while running:
                 cutscene_dialogue_shown = False
                 if cutscene_stage >= len(cutscene_images):
                     cutscene_active = False
+                    cutscene_drone_sound.stop()
+                    cutscene_sound_playing = False  # reset flag
                     tutorial_active = True
                     current_dialogue = None
                     dialogue_queue.clear()
@@ -1353,7 +1362,13 @@ while running:
                 falling_snow_chunks.append(SnowChunk())
     screen.fill(backgroundColor)
     if cutscene_active:
+
+        if not cutscene_sound_playing:
+            cutscene_drone_sound.play(-1)  # loop indefinitely
+            cutscene_sound_playing = True
+
         screen.blit(cutscene_images[cutscene_stage], (0, 0))
+
 
         if current_dialogue:
             draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
