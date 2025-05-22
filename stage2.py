@@ -6,9 +6,6 @@ from pathlib import Path
 ICEBALL_SECOND_EVENT = pygame.USEREVENT + 1
 SECOND_SOUND_DELAY = 5000  # milliseconds
 
-
-"hello"
-
 # ------------------------------
 # Initialization
 # ------------------------------
@@ -61,6 +58,8 @@ cutscene_images = [
 cutscene_images = [pygame.transform.scale(img, (SCREEN_WIDTH, SCREEN_HEIGHT)) for img in cutscene_images]
 final_cutscene = pygame.image.load(BASE / "finn saves PB cutscene.png").convert()
 final_cutscene = pygame.transform.scale(final_cutscene, (SCREEN_WIDTH, SCREEN_HEIGHT))
+victory_screen = pygame.image.load(BASE / "victory screen.png").convert()
+victory_screen = pygame.transform.scale(victory_screen, (SCREEN_WIDTH, SCREEN_HEIGHT))
 iceking_health_full  = pygame.transform.scale(
     pygame.image.load(BASE / "stamina1.png").convert_alpha(), (20, 40)
 )
@@ -110,11 +109,6 @@ game_over_sound = pygame.mixer.Sound(BASE / "kl-peach-game-over-iii-142453.mp3")
 game_over_sound.set_volume(SFX_VOLUME)
 restart_sound = pygame.mixer.Sound(BASE/"button-124476.mp3")
 restart_sound.set_volume(1)
-
-
-
-
-
 
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet1.SpriteSheet(boss_powers)
@@ -829,6 +823,8 @@ hit_overlay_start_time = 0
 charging_ice_cube = False
 charging_start_time = 0
 charging_duration = 2500
+charging_started = False
+charging_just_finished = False
 death_start_time = None
 explosion_index = None
 explosion_timer = None
@@ -851,10 +847,12 @@ cutscene_sound_playing = False
 cutscene_dialogue_shown = False
 final_cutscene_active = False
 final_cutscene_shown = False
+defeat_dialogue_finished = False
+victory_screen_active = False
 
 tutorial_titles = ["Snowball Attack", "Ice Spike Danger", "Reflect Ice Cubes"]
 tutorial_texts = [
-    "Ice King shoots snowballs. Avoid them or you’ll be slowed down temporarily.",
+    "Ice King shoots snowballs. Avoid them or you'll be slowed down temporarily.",
     "Spikes erupt from the ground. Watch for the glowing warning and avoid them.",
     "You can reflect ice cubes with your sword. Time your attack and send them flying back!"
 ]
@@ -1162,7 +1160,7 @@ def phase2(now):
 def phase3(now):
     global ice_king_state, animation_frame, last_update, ice_spike_loops
     global cube_phase3_start, spawned_cube, ice_ydir, ice_ypos
-    global shake_duration, shake_timer
+    global shake_duration, shake_timer, charging_ice_cube, charging_started, charging_just_finished
     if phase_dialogue_active and dialogue_is_blocking:
         return 
     # Spike Phase 3
@@ -1175,7 +1173,9 @@ def phase3(now):
                     steam_emitters.append(IcySteamEmitter(x, 700))
                 ice_spike_loops += 1
             else:
-                ice_king_state, cube_phase3_start, animation_frame, last_update = "attack", now, 0, now
+                ice_king_state, cube_phase3_start, animation_frame, last_update = "cube_attack", now, 0, now
+                spawned_cube = False
+                charging_ice_cube = False
                 return
         if now - last_update >= frame_cd:
             animation_frame = (animation_frame + 1) % len(spike_animation)
@@ -1184,42 +1184,55 @@ def phase3(now):
         screen.blit(spike_animation[frame_idx], (ice_xpos, ice_ypos))
 
     # Ice Cube Attack
-    elif ice_king_state == "attack":
-        global parry_dialogue_triggered_this_cycle, charging_ice_cube, charging_start_time, dialogue_start_time, current_dialogue
+    elif ice_king_state == "cube_attack":
+        global parry_dialogue_triggered_this_cycle, charging_start_time, dialogue_start_time, current_dialogue, charging_started
 
         if now - last_update >= frame_cd:
             animation_frame = (animation_frame + 1) % len(attack_animation)
             last_update = now
+            if animation_frame == 0:
+                charging_started = False
 
         if ice_ypos <= 90: ice_ydir = 1
         elif ice_ypos >= 450: ice_ydir = -1
         ice_ypos += ice_speed * ice_ydir
 
-        if animation_frame == 3 and not charging_ice_cube:
+        if animation_frame == 3 and not charging_ice_cube and not charging_started:
             charging_ice_cube = True
+            charging_started = True
             charging_start_time = now
+            ice_cube_sound.play()
 
             if not parry_dialogue_triggered_this_cycle:
                 current_dialogue = dict(battle_dialogue["parry"][0])
                 current_dialogue["type"] = "parry"
                 dialogue_start_time = pygame.time.get_ticks()
                 parry_dialogue_triggered_this_cycle = True
-            
-        if charging_ice_cube and now - charging_start_time > charging_duration:
-            charging_ice_cube = False
+        
+        if charging_ice_cube:
+            elapsed = now - charging_start_time
+            if elapsed > charging_duration:
+                charging_ice_cube = False
+                charging_just_finished = True
 
-        if animation_frame == 4 and not spawned_cube:
-            ice_cubes.append(IceCube(ice_xpos+30, ice_ypos+40, cube_frames))
-            ice_cube_sound.play()
+        if charging_just_finished and animation_frame == 4 and not spawned_cube:
+            spawn_count = random.randint(3, 6)  # randomly spawn between 2 and 5 cubes
+            spawn_x = ice_xpos + 30
+            for i in range(spawn_count):
+                random_y_offset = random.randint(80, SCREEN_HEIGHT - 100)  # vertical randomness
+                spawn_y = random_y_offset
+                ice_cubes.append(IceCube(spawn_x, spawn_y, cube_frames))
             spawned_cube = True
-        elif animation_frame != 4:
-            spawned_cube = False
+            charging_just_finished = False
 
         screen.blit(attack_animation[animation_frame], (ice_xpos, ice_ypos))
 
         if now - cube_phase3_start >= 5000:
+            print("Resetting phase to phase3")
             ice_king_state, animation_frame, last_update, ice_spike_loops = "phase3", 0, now, 0
             parry_dialogue_triggered_this_cycle = False
+            spawned_cube = False
+            charging_started = False
 
     # Warnings & Spikes
     for w in warnings[:]:
@@ -1251,12 +1264,12 @@ def reset_game():
     global cutscene_sound_playing
     global dialogue_bgm
     global game_over_sound_played
+    global victory_sound_played
+    global defeat_dialogue_finished, final_cutscene_active, final_cutscene_shown
     game_over_sound_played = False
     victory_sound_played = False
     fireworks_played = False
     game_over_sound_played = False
-
-
 
     # Reset player
     health_bar = HealthBar()
@@ -1297,6 +1310,9 @@ def reset_game():
     finn_forced_position_x = None
     death_screen_time = None
     dialogue_start_time = 0
+    defeat_dialogue_finished = False
+    final_cutscene_active = False
+    final_cutscene_shown = False
 
     # Clear active effects and dialogue
     dialogue_queue.clear()
@@ -1318,6 +1334,7 @@ def reset_game():
 # Main Game Loop
 # ------------------------------
 ice_king_state = "idle"
+phase3_ready = False
 running = True
 while running:
     for event in pygame.event.get():
@@ -1345,13 +1362,18 @@ while running:
 
             # 3. Handle final cutscene (after defeat)
             elif final_cutscene_active:
-                final_cutscene_active = False
+                if not current_dialogue and not dialogue_queue:
+                    final_cutscene_active = False
+                    victory_screen_active = True
 
             # 4. Advance tutorial normally
             elif tutorial_active:
                 tutorial_stage += 1
                 if tutorial_stage >= len(tutorial_images):
                     tutorial_active = False
+
+            elif victory_screen_active:
+                running = False
         elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             restart_sound.play()
             reset_game()
@@ -1383,6 +1405,7 @@ while running:
 
     now = pygame.time.get_ticks()
     dialogue_is_blocking = (current_dialogue and current_dialogue.get("type") != "parry")
+    phase3_ready = (ice_king_state == "phase3" and not dialogue_is_blocking)
     offset_x, offset_y = 0, 0
     shake_elapsed = pygame.time.get_ticks() - shake_timer
     
@@ -1405,7 +1428,6 @@ while running:
             cutscene_sound_playing = True
 
         screen.blit(cutscene_images[cutscene_stage], (0, 0))
-
 
         if current_dialogue:
             draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
@@ -1452,6 +1474,18 @@ while running:
         pygame.display.flip()
         clock.tick(FPS)
         continue
+
+    if victory_screen_active:
+        screen.blit(victory_screen, (0, 0))
+
+        font_victory = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
+        tip = font_victory.render("Click to exit", True, (255, 255, 255))
+        screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT - 35))
+
+        pygame.display.flip()
+        clock.tick(FPS)
+        continue
+
     screen.blit(background, (offset_x, offset_y))
 
     if random.random() < 0.01:  # ~1% chance per frame
@@ -1662,7 +1696,7 @@ while running:
                 phase2(now)
             else:
                 phase3_ready = (
-                    ice_king_state == "phase3" and
+                    ice_king_state in ("phase3", "cube_attack") and
                     not dialogue_is_blocking
                 )
                 if phase3_ready:
@@ -1765,7 +1799,7 @@ while running:
     else:
         if ice_king_state in ["idle", "dropping", "vulnerable"]:
             current = idle_animation
-        elif ice_king_state == "attack":
+        elif ice_king_state in ["attack", "cube_attack"]:
             current = attack_animation
         elif ice_king_state in ["phase2", "phase3"]:
             current = spike_animation
@@ -1776,7 +1810,7 @@ while running:
     boss_img = current[bf]
     if (
         charging_ice_cube and 
-        ice_king_state == "attack" and 
+        ice_king_state == "cube_attack" and 
         phase3_started and 
         hp_ratio <= 0.4
     ):
@@ -1786,11 +1820,13 @@ while running:
             ice_ypos + boss_img.get_height() // 2 + 10
         )
     # Always draw Ice King unless he's in dying or defeated state
-    if ice_king_state == "defeated" and not defeat_dialogue_shown:
+    if ice_king_state == "defeated":
         defeated_frame = defeated_animation[animation_frame % len(defeated_animation)]
-        queue_dialogue(battle_dialogue["defeat"])
-        defeat_dialogue_shown = True
         screen.blit(defeated_frame, (ice_xpos, ice_ypos))
+    
+        if not defeat_dialogue_shown:
+            queue_dialogue(battle_dialogue["defeat"])
+            defeat_dialogue_shown = True
 
     elif ice_king_state == "dying":
         pass  # Drawing handled elsewhere
@@ -1882,7 +1918,7 @@ while running:
             sb.draw(screen)
 
     # Reflect & draw ice cubes in phase3
-    if ice_king_state == "phase3":
+    if ice_king_state in ("phase3", "cube_attack"):
         if finn_attacking and finn_action == 4 and finn_frame == 3:
             atk_rect = full_rect.inflate(50, -20)
             atk_rect.x += 25
@@ -1932,6 +1968,11 @@ while running:
     elif dialogue_queue:
         current_dialogue = dialogue_queue.pop(0)
         dialogue_start_time = pygame.time.get_ticks()
+
+    if defeat_dialogue_shown and not current_dialogue and not dialogue_queue and not defeat_dialogue_finished:
+        defeat_dialogue_finished = True
+        final_cutscene_active = True
+        final_cutscene_shown = False
     
     elif pending_phase:
         if pending_phase == "start_phase1":
@@ -1951,10 +1992,6 @@ while running:
         if 'hit_start_frame' in locals(): del hit_start_frame
         if 'hit_anim_frame' in locals(): del hit_anim_frame
         if 'hit_last_update' in locals(): del hit_last_update
-    
-    elif ice_king_fully_defeated and not final_cutscene_shown:
-        final_cutscene_active = True
-        final_cutscene_shown = True
 
     # Draw health bars
     ice_king.draw_health_bar(screen)
@@ -1995,7 +2032,6 @@ while running:
         if tutorial_stage == 0:
             screen.blit(tutorial_images[0], (0, 0))
 
-        # Stages 1–3: Genshin-style layout
         elif 1 <= tutorial_stage < len(tutorial_images):
             # Background blur
             blur_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
