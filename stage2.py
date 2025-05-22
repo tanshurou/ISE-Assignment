@@ -109,6 +109,9 @@ game_over_sound = pygame.mixer.Sound(BASE / "kl-peach-game-over-iii-142453.mp3")
 game_over_sound.set_volume(SFX_VOLUME)
 restart_sound = pygame.mixer.Sound(BASE/"button-124476.mp3")
 restart_sound.set_volume(1)
+new_victory_sound = pygame.mixer.Sound(BASE / "goodresult-82807.mp3")
+new_victory_sound.set_volume(MUSIC_VOLUME)  
+
 
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet1.SpriteSheet(boss_powers)
@@ -1479,6 +1482,8 @@ while running:
         continue
 
     if victory_screen_active:
+        victory_sound.stop()
+        new_victory_sound.play()
         screen.blit(victory_screen, (0, 0))
 
         font_victory = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
