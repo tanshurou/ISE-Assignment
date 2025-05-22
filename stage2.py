@@ -112,7 +112,6 @@ restart_sound.set_volume(1)
 new_victory_sound = pygame.mixer.Sound(BASE / "goodresult-82807.mp3")
 new_victory_sound.set_volume(MUSIC_VOLUME)  
 
-
 boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
 abilities = spritesheet1.SpriteSheet(boss_powers)
 spikes_ss = spritesheet1.SpriteSheet(powers2)
@@ -612,7 +611,11 @@ class SnowChunk:
         return self.y > SCREEN_HEIGHT
 
     def draw(self, surface):
-        surface.blit(rock_chunk_img, (self.x, self.y))
+        scale_factor = 0.5
+        new_width = int(rock_chunk_img.get_width() * scale_factor)
+        new_height = int(rock_chunk_img.get_height() * scale_factor)
+        scaled_rock = pygame.transform.scale(rock_chunk_img, (new_width, new_height))
+        surface.blit(scaled_rock, (self.x, self.y))
 
 class IceShard:
     def __init__(self, x, y):
