@@ -12,7 +12,7 @@ SECOND_SOUND_DELAY = 5000  # milliseconds
 # ------------------------------
 pygame.init()
 pygame.mixer.init()
-SFX_VOLUME   = 0.1
+SFX_VOLUME   = 0.3
 MUSIC_VOLUME = 0.2
 SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
