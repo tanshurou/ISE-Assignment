@@ -1227,6 +1227,8 @@ def phase3(now):
 
         screen.blit(attack_animation[animation_frame], (ice_xpos, ice_ypos))
 
+        print(f"Checking phase reset: now={now}, cube_phase3_start={cube_phase3_start}, elapsed={now - cube_phase3_start}")
+
         if now - cube_phase3_start >= 5000:
             print("Resetting phase to phase3")
             ice_king_state, animation_frame, last_update, ice_spike_loops = "phase3", 0, now, 0
@@ -1371,7 +1373,6 @@ while running:
                 tutorial_stage += 1
                 if tutorial_stage >= len(tutorial_images):
                     tutorial_active = False
-
             elif victory_screen_active:
                 running = False
         elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
@@ -1459,7 +1460,8 @@ while running:
 
         if current_dialogue:
             draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
-            if pygame.time.get_ticks() - dialogue_start_time >= current_dialogue.get("duration", 999999):
+            duration = current_dialogue.get("duration", 999999)
+            if pygame.time.get_ticks() - dialogue_start_time >= duration:
                 current_dialogue = None
 
         elif dialogue_queue:
@@ -1471,6 +1473,7 @@ while running:
             queue_dialogue(cutscene_dialogue["final"])
             final_cutscene_shown = True
 
+        # Wait until dialogue finishes, then close final cutscene on click (handled by your event loop)
         pygame.display.flip()
         clock.tick(FPS)
         continue
@@ -1828,6 +1831,10 @@ while running:
             queue_dialogue(battle_dialogue["defeat"])
             defeat_dialogue_shown = True
 
+        if not defeat_dialogue_shown:
+            queue_dialogue(battle_dialogue["defeat"])
+            defeat_dialogue_shown = True
+
     elif ice_king_state == "dying":
         pass  # Drawing handled elsewhere
 
@@ -1992,7 +1999,6 @@ while running:
         if 'hit_start_frame' in locals(): del hit_start_frame
         if 'hit_anim_frame' in locals(): del hit_anim_frame
         if 'hit_last_update' in locals(): del hit_last_update
-
     # Draw health bars
     ice_king.draw_health_bar(screen)
     health_bar.draw(screen)
