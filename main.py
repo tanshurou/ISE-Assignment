@@ -1,7 +1,7 @@
 import pygame
 from pathlib import Path
 import stage1
-import stage2
+import test
 
 def main():
     pygame.init()
@@ -17,7 +17,7 @@ def main():
     # optionally clear or fade out music, reset any globals here…
 
     # Run Stage 2
-    stage2.run_stage2(screen)
+    test.run_stage2()
 
     pygame.quit()
 
