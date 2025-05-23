@@ -257,7 +257,7 @@ def run_stage2(screen):
     flash_duration       = 500 
     tutorial_active      = True
     tutorial_stage       = 0
-    
+    game_over            = False
     death_screen_time    = None
 
     # ------------------------------
@@ -866,7 +866,6 @@ def run_stage2(screen):
     dialogue_queue = []
     current_dialogue = None
     dialogue_start_time = 0
-    dialogue_duration = 3000
     parry_dialogue_triggered_this_cycle = False
     defeat_dialogue_shown = False
     pending_phase = None
@@ -996,9 +995,9 @@ def run_stage2(screen):
         return positions
 
     def phase1(now):
-        global fight_started, fight_start, state_timer
+        global fight_started, state_timer
         nonlocal animation_frame, last_update, ice_ydir, ice_king_state, ice_ypos
-        nonlocal pending_phase, phase_dialogue_active
+        nonlocal pending_phase, phase_dialogue_active, fight_start
         # clear any stray warnings/spikes
         warnings.clear()
         spikes.clear()
@@ -1063,8 +1062,9 @@ def run_stage2(screen):
             last_update = now
 
     def handle_dropping_phase(now):
-        global ice_king_state, animation_frame, state_timer, last_update, vulnerable_start
-        nonlocal ice_ypos
+        global vulnerable_start
+        nonlocal ice_king_state, animation_frame, state_timer
+        nonlocal ice_ypos, last_update
         if ice_ypos < original_ypos:
             ice_ypos += 4
         else:
@@ -1074,8 +1074,9 @@ def run_stage2(screen):
             last_update = now
 
     def handle_vulnerable_phase(now):
-        global ice_king_state, animation_frame, last_update, ice_spike_loops, vulnerable_start
-        global ice_xpos, ice_ypos
+        global vulnerable_start
+        nonlocal ice_king_state, animation_frame, ice_spike_loops
+        nonlocal ice_xpos, ice_ypos, last_update
 
         if now - last_update >= frame_cd:
             animation_frame = (animation_frame + 1) % len(idle_animation)
@@ -1112,7 +1113,7 @@ def run_stage2(screen):
                         steam_emitters.append(IcySteamEmitter(x, 700))
                     ice_spike_loops += 1
                 else:
-                    ice_king_state     = "attack"
+                    ice_king_state    = "attack"
                     snow_phase2_start = now
                     animation_frame   = 0
                     last_update       = now
@@ -1192,9 +1193,10 @@ def run_stage2(screen):
                     sp.draw(screen)
 
     def phase3(now):
-        global ice_king_state, animation_frame, last_update, ice_spike_loops
-        global cube_phase3_start, spawned_cube, ice_ydir, ice_ypos
-        global shake_duration, shake_timer, charging_ice_cube, charging_started, charging_just_finished
+        nonlocal charging_started
+        nonlocal cube_phase3_start, spawned_cube, ice_ydir
+        nonlocal shake_duration, shake_timer, charging_ice_cube, charging_just_finished
+        nonlocal last_update, ice_king_state, ice_spike_loops, animation_frame, ice_ypos
         if phase_dialogue_active and dialogue_is_blocking:
             return 
         # Spike Phase 3
@@ -1219,7 +1221,8 @@ def run_stage2(screen):
 
         # Ice Cube Attack
         elif ice_king_state == "cube_attack":
-            global parry_dialogue_triggered_this_cycle, charging_start_time, dialogue_start_time, current_dialogue, charging_started
+            global dialogue_start_time, current_dialogue
+            nonlocal charging_started, parry_dialogue_triggered_this_cycle, charging_start_time
 
             if now - last_update >= frame_cd:
                 animation_frame = (animation_frame + 1) % len(attack_animation)
@@ -1302,10 +1305,6 @@ def run_stage2(screen):
         global game_over_sound_played
         global victory_sound_played
         global defeat_dialogue_finished, final_cutscene_active, final_cutscene_shown
-        
-        
-        
-        
 
         # Reset player
         health_bar = HealthBar()
