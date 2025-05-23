@@ -824,6 +824,9 @@ class Scenes():
       self.game_finished = True
       self.timer_active = False
       self.running_sound.stop()
+      if not self.finish_line_sound_played:
+        self.finish_line_sound.play()
+        self.finish_line_sound_played = True
       if self.leaderboard.username and not self.score_saved:
         total_seconds = self.elapsed_time // 1000
         self.leaderboard.save_score(total_seconds)
@@ -862,7 +865,7 @@ class Scenes():
       target_base_speed = self.max_base_speed
       self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.3
       if self.effects.effects["speed_boost"]["active"]:
-          target_scroll_speed = self.finn.base_speed * 15
+          target_scroll_speed = self.finn.base_speed * 2
       elif self.finn.running and self.finn.stamina_bar.current_stamina > 0:
           target_scroll_speed = self.finn.base_speed * self.finn.run_multiplier
       else:
@@ -897,13 +900,6 @@ class Scenes():
       finisher_rect = self.finisher_line_img.get_rect(topleft=(self.finisher_line_x, 220 + offset_y))
       screen.blit(self.finisher_line_img, (self.finisher_line_x, 220 + offset_y))
       self.finisher_line_x -= self.scroll_speed
-      if not self.finish_line_sound_played and self.finn.hitbox.colliderect(finisher_rect):
-        if self.running_sound.get_num_channels() > 0:
-            self.running_sound.stop()
-        self.finish_line_sound.play()
-        self.finish_line_sound_played = True
-      elif self.finish_line_sound_played:
-        pass
       if self.finisher_line_x + self.finisher_line_img.get_width() < 0:
         self.finisher_line_shown = False
 
