@@ -1,6 +1,6 @@
 import pygame
 from pathlib import Path
-import stage1
+from stage1 import startStage1
 import test
 
 def main():
@@ -11,12 +11,12 @@ def main():
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Adventure Time → Boss Battle")
 
-    # Run Stage 1
-    stage1.run_stage1(screen)
+    # # Run Stage 
+    # startStage1()
 
     # optionally clear or fade out music, reset any globals here…
 
-    # Run Stage 2
+    # # Run Stage 2
     test.run_stage2()
 
     pygame.quit()

@@ -32,7 +32,7 @@ def run_stage2(screen):
     # ------------------------------
     # Initialization
     # ------------------------------
-   
+
     
     SFX_VOLUME   = 0.3
     MUSIC_VOLUME = 0.3
