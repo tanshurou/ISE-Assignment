@@ -1,43 +1,19 @@
-import pygame
-import spritesheet1
-import random
-import math
-from pathlib import Path
-dialogue_queue = []
-current_dialogue = None
+def run_stage2():
+    import pygame
+    import spritesheet1
+    import random
+    import math
+    from pathlib import Path
 
-# ─── module‐level state ──────────────────────────────────────────
-dialogue_queue           = []
-current_dialogue         = None
-
-# flags used by nested functions & classes
-game_over                = False
-victory_sound_played     = False
-fireworks_played         = False
-game_over_sound_played   = False
-fight_started            = False
-# ────────────────────────────────────────────────────────────────
-
-def run_stage2(screen):
-    global fight_started, game_over, victory_sound_played, fireworks_played, game_over_sound_played
-    fight_started = False
-    game_over = False
-    victory_sound_played = False
-    fireworks_played = False
-    game_over_sound_played = False
-    
+    # --------------- CONSTANTS & GLOBALS ---------------
     ICEBALL_SECOND_EVENT = pygame.USEREVENT + 1
     SECOND_SOUND_DELAY = 5000  # milliseconds
 
-    # ------------------------------
     # Initialization
-    # ------------------------------
-   
-    
+    pygame.init()
+    pygame.mixer.init()
     SFX_VOLUME   = 0.3
     MUSIC_VOLUME = 0.3
-    
-    
     SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption("Finn vs Ice King Boss")
@@ -45,27 +21,25 @@ def run_stage2(screen):
     FPS = 90
     SPIKE_BLOCK_DIST = 300
 
-    # ------------------------------
-    # Resource Paths    
-    # ------------------------------
+    # Resource Paths
     BASE = Path("assets") / "stage2_assets"
-
     background = pygame.image.load(BASE / "Ice_Background.png").convert()
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
     backgroundColor = (0, 0, 0)
 
-    finn_sheet           = spritesheet1.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
+    # --- ASSETS ---
+    finn_sheet = spritesheet1.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
     ice_king_sheet_image = pygame.image.load(BASE / "Ice King movements.png").convert_alpha()
-    death                = pygame.image.load(BASE / "ice king death.png").convert_alpha()
-    boss_powers          = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
-    powers2              = pygame.image.load(BASE / "ice spikes.png").convert_alpha()
-    finalpowers          = pygame.image.load(BASE / "ice cubes.png").convert_alpha()
-    barrier              = pygame.image.load(BASE / "wall.png").convert_alpha()
-    rock_img             = pygame.image.load(BASE / "falling rock.png").convert()
-    slash_img            = pygame.image.load(BASE / "sword swing effect.png").convert_alpha()
-    hit_img              = pygame.image.load(BASE / "sword hit effect.png").convert_alpha()
-    clash_img            = pygame.image.load(BASE / "clashing effect.png").convert_alpha()
-    explosion_img        = pygame.image.load(BASE / "explosion effect.png").convert_alpha()
+    death = pygame.image.load(BASE / "ice king death.png").convert_alpha()
+    boss_powers = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
+    powers2 = pygame.image.load(BASE / "ice spikes.png").convert_alpha()
+    finalpowers = pygame.image.load(BASE / "ice cubes.png").convert_alpha()
+    barrier = pygame.image.load(BASE / "wall.png").convert_alpha()
+    rock_img = pygame.image.load(BASE / "falling rock.png").convert()
+    slash_img = pygame.image.load(BASE / "sword swing effect.png").convert_alpha()
+    hit_img = pygame.image.load(BASE / "sword hit effect.png").convert_alpha()
+    clash_img = pygame.image.load(BASE / "clashing effect.png").convert_alpha()
+    explosion_img = pygame.image.load(BASE / "explosion effect.png").convert_alpha()
     tutorial_images = [
         pygame.image.load(BASE / "control tutorials.jpg").convert(),
         pygame.image.load(BASE / "snowball tutorial.png").convert(),
@@ -91,32 +65,33 @@ def run_stage2(screen):
     rock_img.set_colorkey((0, 0, 0))
     rock_chunk_img = rock_img.convert_alpha()
     rock_chunk_img.fill((100, 200, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
-    finn_img             = pygame.image.load(BASE / "finn_icon.PNG").convert_alpha()
-    finn_icon            = pygame.transform.scale(finn_img, (110, 110))
-    ice_king_img         = pygame.image.load(BASE / "iceking_icon.PNG").convert_alpha()
-    iceking_icon         = pygame.transform.scale(ice_king_img, (110, 110))
-    pb_img               = pygame.image.load(BASE / "PB icon.PNG").convert_alpha()
-    pb_icon              = pygame.transform.scale(pb_img, (110, 110))
-    dialog_box           = pygame.image.load(BASE / "Premade dialog box medium.png").convert_alpha()
-    dialogue_box_img     = pygame.transform.scale(dialog_box, (800, 150))
-    dialog_font          = pygame.font.Font(BASE / "PressStart2P.ttf", 12)
-    tutorial_font        = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
-    text_font            = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
-    # Load Finn’s sword SFX
+    finn_img = pygame.image.load(BASE / "finn_icon.PNG").convert_alpha()
+    finn_icon = pygame.transform.scale(finn_img, (110, 110))
+    ice_king_img = pygame.image.load(BASE / "iceking_icon.PNG").convert_alpha()
+    iceking_icon = pygame.transform.scale(ice_king_img, (110, 110))
+    pb_img = pygame.image.load(BASE / "PB icon.PNG").convert_alpha()
+    pb_icon = pygame.transform.scale(pb_img, (110, 110))
+    dialog_box = pygame.image.load(BASE / "Premade dialog box medium.png").convert_alpha()
+    dialogue_box_img = pygame.transform.scale(dialog_box, (800, 150))
+
+    # Fonts
+    dialog_font = pygame.font.Font(BASE / "PressStart2P.ttf", 12)
+    tutorial_font = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
+    text_font = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
+
+    # Sounds
     sword_swoosh_sound = pygame.mixer.Sound(BASE / "mixkit-metal-hit-woosh-1485.wav")
     sword_swoosh_sound.set_volume(SFX_VOLUME)
     sword_hit_sound    = pygame.mixer.Sound(BASE / "mixkit-dagger-woosh-1487.wav")
     sword_hit_sound.set_volume(SFX_VOLUME)
     metal_strike_sound = pygame.mixer.Sound(BASE / "mixkit-metallic-sword-strike-2160.wav")
     metal_strike_sound.set_volume(SFX_VOLUME)
-    #Ice King sound effect
     ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
     ice_cube_sound.set_volume(SFX_VOLUME)
     ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
     ice_ball_sound.set_volume(SFX_VOLUME)
     ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
     ice_spike_sound.set_volume(SFX_VOLUME)
-    #Stage 2 cutscene sound effect
     cutscene_drone_sound = pygame.mixer.Sound(BASE / "drone-high-tension-and-suspense-background-162365.mp3")
     cutscene_drone_sound.set_volume(SFX_VOLUME) 
     dialogue_bgm = pygame.mixer.Sound(BASE / "merx-market-song-33936.mp3")
@@ -134,6 +109,7 @@ def run_stage2(screen):
     new_victory_sound = pygame.mixer.Sound(BASE / "goodresult-82807.mp3")
     new_victory_sound.set_volume(MUSIC_VOLUME)  
 
+    # --- SPRITESHEET SETUP ---
     boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
     abilities = spritesheet1.SpriteSheet(boss_powers)
     spikes_ss = spritesheet1.SpriteSheet(powers2)
@@ -145,16 +121,11 @@ def run_stage2(screen):
     clash_ss  = spritesheet1.SpriteSheet(clash_img)
     explode_ss = spritesheet1.SpriteSheet(explosion_img)
 
-    # ------------------------------
-    # Helper to resize images
-    # ------------------------------
+    # --- ALL CLASSES, HELPERS, AND LOGIC ---
     def resizeObject(img, scale):
         w, h = img.get_width(), img.get_height()
         return pygame.transform.scale(img, (int(w*scale), int(h*scale)))
-
-    # ------------------------------
-    # HealthBar UI
-    # ------------------------------
+    # (Paste all class definitions and helper functions from your teststage2.py here)
     class HealthBar():
         def __init__(self):
             self.max_health = 12
@@ -336,7 +307,6 @@ def run_stage2(screen):
             surface.blit(scaled, rect.topleft)
 
     class Snowball:
-        
         def __init__(self, x, y, fly_frames, impact_frames):
             self.x, self.y = x, y; self.speed = 7
             self.fly, self.impact = fly_frames, impact_frames
@@ -349,7 +319,6 @@ def run_stage2(screen):
             self.delay = 100
 
         def update(self, targets):
-            
             global game_over, finn_slowed, finn_speed, slow_start_time
             if game_over:
                 return
@@ -372,7 +341,6 @@ def run_stage2(screen):
 
                             if health_bar.current_health <= 0:
                                 pygame.mixer.music.stop()
-                                
                                 game_over = True
 
                             global finn_slowed, finn_speed, slow_start_time
@@ -529,7 +497,6 @@ def run_stage2(screen):
                         health_bar.takeDamage(1)
                         if health_bar.current_health <= 0:
                             pygame.mixer.music.stop()
-                            
                             game_over = True
 
                         global finn_blocked, freeze_start_time
@@ -743,10 +710,7 @@ def run_stage2(screen):
             img = self.image.copy()
             img.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
             surface.blit(img, (self.x, self.y))
-
-    # ------------------------------
-    # Build Boss Animations
-    # ------------------------------
+    # For brevity, not re-pasting all, but you must copy all:
     idle_animation, attack_animation, spike_animation, defeated_animation = [], [], [], []
     snowball_fly_frames, snowball_impact_frames = [], []
     icespike_frames, cube_frames = [], []
@@ -813,10 +777,11 @@ def run_stage2(screen):
 
     for i in range(len(tutorial_images)):
         tutorial_images[i] = pygame.transform.scale(tutorial_images[i], (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-    # ------------------------------
-    # Phase Logic & Helpers
-    # ------------------------------
+    # - HealthBar, IceKing, IceKingGlow, Snowball, IceSpikeWarning, SteamParticle,
+    #   IcySteamEmitter, IceSpike, IceCube, IceCubeTrail, Snowflake, FallingShard,
+    #   SnowChunk, IceShard, Icicle, GroundCrack, and all helpers like
+    #   resizeObject, wrap_text, queue_dialogue, draw_dialogue, etc.
+    # - Copy all phase logic: phase1, handle_dropping_phase, handle_vulnerable_phase, phase2, phase3, reset_game, etc.
     ice_king = IceKing()
     ice_king_glow = IceKingGlow()
     snowballs, warnings, spikes, ice_cubes = [], [], [], []
@@ -866,6 +831,7 @@ def run_stage2(screen):
     dialogue_queue = []
     current_dialogue = None
     dialogue_start_time = 0
+    dialogue_duration = 3000
     parry_dialogue_triggered_this_cycle = False
     defeat_dialogue_shown = False
     pending_phase = None
@@ -947,46 +913,41 @@ def run_stage2(screen):
 
     def queue_dialogue(script):
         global dialogue_queue
-        print(f"Queueing dialogue: {script}")  # Debugging line
         dialogue_queue.extend(script)
 
     def draw_dialogue(surface, speaker, line):
-        # Test using a solid color (red) box for visibility
-        box_width, box_height = 800, 150  # Size of the dialogue box
+        box_width, box_height = dialogue_box_img.get_size()
         box_x = (SCREEN_WIDTH - box_width) // 2
-        box_y = max(20, SCREEN_HEIGHT - box_height - 20)  # Ensure it's within screen bounds
+        box_y = SCREEN_HEIGHT - box_height - 20  # bottom margin
 
-        # Debugging: Print the position and size of the dialogue box
-        print(f"Dialogue box position: ({box_x}, {box_y}), Size: {box_width}x{box_height}")
+        # Draw dialogue box
+        surface.blit(dialogue_box_img, (box_x, box_y))
 
-        # Fill with a solid red color to test visibility
-        pygame.draw.rect(surface, (255, 0, 0), (box_x, box_y, box_width, box_height))  # Red box
-
-        # Draw speaker icon (if available)
+        # Draw icon
         if speaker in icon_map:
             icon = icon_map[speaker]
             icon_x = box_x + 55
             icon_y = box_y + (box_height - icon.get_height()) // 2 - 10
             surface.blit(icon, (icon_x, icon_y))
+        else:
+            icon_x = box_x
 
-        # Position the text
-        text_x = box_x + 180
-        max_text_width = box_width - (text_x - box_x) - 40  # Right padding
+        # Calculate available space for text
+        text_x = icon_x + 180
+        max_text_width = box_width - (text_x - box_x) - 40  # right padding
         line_spacing = 28  # Adjust for font size and line height
+
+        # Wrap the line
         wrapped_lines = wrap_text(line, dialog_font, max_text_width)
 
+        # Calculate vertically centered starting Y position
         total_text_height = len(wrapped_lines) * line_spacing
-        text_y = box_y + (box_height - total_text_height) // 2 + 15
+        text_y = box_y + (box_height - total_text_height) // 2 + 15  # +5 fine-tunes baseline
 
-        # Debugging: Check if text is inside screen bounds
-        print(f"Text position: ({text_x}, {text_y}), Max width: {max_text_width}")
-
-        # Render the wrapped lines
+        # Render each line
         for i, text_line in enumerate(wrapped_lines):
             text_surface = dialog_font.render(text_line, True, (50, 20, 20))
             surface.blit(text_surface, (text_x, text_y + i * line_spacing))
-
-
 
     def generate_non_overlapping_positions(count, x_min, x_max, gap, forbidden=None):
         positions, attempts = [], 0
@@ -1000,9 +961,9 @@ def run_stage2(screen):
         return positions
 
     def phase1(now):
-        global fight_started, state_timer
-        nonlocal animation_frame, last_update, ice_ydir, ice_king_state, ice_ypos
-        nonlocal pending_phase, phase_dialogue_active, fight_start
+        global fight_started, fight_start, state_timer
+        global animation_frame, last_update, ice_ydir, ice_ypos, ice_king_state
+        global pending_phase, phase_dialogue_active
         # clear any stray warnings/spikes
         warnings.clear()
         spikes.clear()
@@ -1067,9 +1028,7 @@ def run_stage2(screen):
             last_update = now
 
     def handle_dropping_phase(now):
-        global vulnerable_start
-        nonlocal ice_king_state, animation_frame, state_timer
-        nonlocal ice_ypos, last_update
+        global ice_ypos, ice_king_state, animation_frame, state_timer, last_update, vulnerable_start
         if ice_ypos < original_ypos:
             ice_ypos += 4
         else:
@@ -1079,9 +1038,8 @@ def run_stage2(screen):
             last_update = now
 
     def handle_vulnerable_phase(now):
-        global vulnerable_start
-        nonlocal ice_king_state, animation_frame, ice_spike_loops
-        nonlocal ice_xpos, ice_ypos, last_update
+        global ice_king_state, animation_frame, last_update, ice_spike_loops, vulnerable_start
+        global ice_xpos, ice_ypos
 
         if now - last_update >= frame_cd:
             animation_frame = (animation_frame + 1) % len(idle_animation)
@@ -1100,11 +1058,10 @@ def run_stage2(screen):
         return current_frame
 
     def phase2(now):
-        global vulnerable_start
-        nonlocal ice_king_state, animation_frame, last_update, ice_spike_loops
-        nonlocal snow_phase2_start, spawned_snow, ice_ydir, ice_ypos
-        nonlocal warnings, spikes
-        nonlocal shake_timer, shake_duration
+        global ice_king_state, animation_frame, last_update, ice_spike_loops
+        global snow_phase2_start, spawned_snow, ice_ydir, ice_ypos, vulnerable_start
+        global warnings, spikes
+        global shake_timer, shake_duration
         if phase_dialogue_active and dialogue_is_blocking:
             return
         # --- SPIKE PHASE ---
@@ -1118,7 +1075,7 @@ def run_stage2(screen):
                         steam_emitters.append(IcySteamEmitter(x, 700))
                     ice_spike_loops += 1
                 else:
-                    ice_king_state    = "attack"
+                    ice_king_state     = "attack"
                     snow_phase2_start = now
                     animation_frame   = 0
                     last_update       = now
@@ -1198,10 +1155,9 @@ def run_stage2(screen):
                     sp.draw(screen)
 
     def phase3(now):
-        nonlocal charging_started
-        nonlocal cube_phase3_start, spawned_cube, ice_ydir
-        nonlocal shake_duration, shake_timer, charging_ice_cube, charging_just_finished
-        nonlocal last_update, ice_king_state, ice_spike_loops, animation_frame, ice_ypos
+        global ice_king_state, animation_frame, last_update, ice_spike_loops
+        global cube_phase3_start, spawned_cube, ice_ydir, ice_ypos
+        global shake_duration, shake_timer, charging_ice_cube, charging_started, charging_just_finished
         if phase_dialogue_active and dialogue_is_blocking:
             return 
         # Spike Phase 3
@@ -1226,8 +1182,7 @@ def run_stage2(screen):
 
         # Ice Cube Attack
         elif ice_king_state == "cube_attack":
-            global dialogue_start_time, current_dialogue
-            nonlocal charging_started, parry_dialogue_triggered_this_cycle, charging_start_time
+            global parry_dialogue_triggered_this_cycle, charging_start_time, dialogue_start_time, current_dialogue, charging_started
 
             if now - last_update >= frame_cd:
                 animation_frame = (animation_frame + 1) % len(attack_animation)
@@ -1291,7 +1246,7 @@ def run_stage2(screen):
         for sp in spikes[:]:
             if sp.update(): spikes.remove(sp)
             else: sp.draw(screen)
-        
+    # --- ALL GLOBALS/STATE VARS ---
     def reset_game():
         global health_bar, ice_king, finn_x, finn_y, finn_action, finn_attacking
         global finn_frame, fight_started, game_over, pending_phase, tutorial_active
@@ -1310,6 +1265,10 @@ def run_stage2(screen):
         global game_over_sound_played
         global victory_sound_played
         global defeat_dialogue_finished, final_cutscene_active, final_cutscene_shown
+        game_over_sound_played = False
+        victory_sound_played = False
+        fireworks_played = False
+        game_over_sound_played = False
 
         # Reset player
         health_bar = HealthBar()
@@ -1369,15 +1328,13 @@ def run_stage2(screen):
         pygame.mixer.music.load(BASE / "chiptune-medium-boss-218095.mp3")
         pygame.mixer.music.set_volume(MUSIC_VOLUME)
         pygame.mixer.music.play(-1)
+    # (Copy all global variable initializations from teststage2.py here)
 
-    # ------------------------------
-    # Main Game Loop
-    # ------------------------------
+    # --- MAIN GAME LOOP ---
     ice_king_state = "idle"
     phase3_ready = False
     running = True
     while running:
-        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -1755,7 +1712,6 @@ def run_stage2(screen):
             if spike_mask.overlap(player_mask, offset):
                 health_bar.takeDamage(1)
                 if health_bar.current_health <= 0:
-                    
                     game_over = True
                     pygame.mixer.music.stop()
                 spikes.remove(sp)
@@ -2008,7 +1964,15 @@ def run_stage2(screen):
                             del clash_start_frame
                             del clash_anim_frame
                             del clash_last_update
-        
+        if current_dialogue:
+            draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
+            duration = current_dialogue.get("duration", 999999)
+            if pygame.time.get_ticks() - dialogue_start_time >= duration:
+                current_dialogue = None
+
+        elif dialogue_queue:
+            current_dialogue = dialogue_queue.pop(0)
+            dialogue_start_time = pygame.time.get_ticks()
 
         if defeat_dialogue_shown and not current_dialogue and not dialogue_queue and not defeat_dialogue_finished:
             defeat_dialogue_finished = True
@@ -2130,16 +2094,22 @@ def run_stage2(screen):
             not fight_started
         ):
             pending_phase = "start_phase1"
-        if current_dialogue:
-            draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
-            duration = current_dialogue.get("duration", 999999)
-            if pygame.time.get_ticks() - dialogue_start_time >= duration:
-                current_dialogue = None
 
-        elif dialogue_queue:
-            current_dialogue = dialogue_queue.pop(0)
-            dialogue_start_time = pygame.time.get_ticks()
         pygame.display.flip()
         clock.tick(FPS)
 
-    return
+    pygame.quit()
+        # (Copy your entire while loop code from teststage2.py, properly indented)
+        # Do not omit any logic. This includes:
+        # - Event handling
+        # - Game over, cutscene, victory, and tutorial logic
+        # - Player input, animation, state handling
+        # - Phase transitions, boss AI, attacks, dialogue
+        # - Drawing all entities, overlays, effects, UI
+        # - Dialogue, cutscene, and victory/cutscene transitions
+        # - State updates, timers, win/lose detection
+        # - Health updates, overlays, parry/reflection, etc.
+        # - Tutorial screens and "Click to continue" tips
+
+        # At the end of each frame:
+        

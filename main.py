@@ -12,7 +12,7 @@ def main():
     pygame.display.set_caption("Adventure Time → Boss Battle")
 
     # Run Stage 1
-    stage1.run_stage1(screen)
+    #stage1.run_stage1(screen)
 
     # optionally clear or fade out music, reset any globals here…
 
