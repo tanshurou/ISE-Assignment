@@ -812,7 +812,6 @@ def phase3(now):
     global ice_king_state, animation_frame, last_update, ice_spike_loops
     global cube_phase3_start, spawned_cube, ice_ydir, ice_ypos
     global shake_duration, shake_timer, charging_ice_cube, charging_started, charging_just_finished
-    print(f"phase3 called, state={ice_king_state}, phase_dialogue_active={phase_dialogue_active}, dialogue_is_blocking={dialogue_is_blocking}")
     if phase_dialogue_active and dialogue_is_blocking:
         return 
     # Spike Phase 3
@@ -826,7 +825,6 @@ def phase3(now):
                 ice_spike_loops += 1
             else:
                 ice_king_state, cube_phase3_start, animation_frame, last_update = "cube_attack", now, 0, now
-                print(f"cube_phase3_start reset to {cube_phase3_start} at time {now}")
                 spawned_cube = False
                 charging_ice_cube = False
                 return
@@ -839,12 +837,10 @@ def phase3(now):
     # Ice Cube Attack
     elif ice_king_state == "cube_attack":
         global parry_dialogue_triggered_this_cycle, charging_start_time, dialogue_start_time, current_dialogue, charging_started
-        print(f"Cube attack frame: {animation_frame}, charging: {charging_ice_cube}, spawned: {spawned_cube}")
 
         if now - last_update >= frame_cd:
             animation_frame = (animation_frame + 1) % len(attack_animation)
             last_update = now
-            print(f"Advancing animation_frame to {animation_frame}")
 
             # Reset charging_started when animation loops
             if animation_frame == 0:
@@ -886,10 +882,7 @@ def phase3(now):
 
         screen.blit(attack_animation[animation_frame], (ice_xpos, ice_ypos))
 
-        print(f"Checking phase reset: now={now}, cube_phase3_start={cube_phase3_start}, elapsed={now - cube_phase3_start}")
-
         if now - cube_phase3_start >= 5000:
-            print("Resetting phase to phase3")
             ice_king_state, animation_frame, last_update, ice_spike_loops = "phase3", 0, now, 0
             parry_dialogue_triggered_this_cycle = False
             spawned_cube = False
