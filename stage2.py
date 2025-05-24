@@ -5,123 +5,6 @@ import math
 from pathlib import Path
 ICEBALL_SECOND_EVENT = pygame.USEREVENT + 1
 SECOND_SOUND_DELAY = 5000  # milliseconds
-"hello"
-
-# ------------------------------
-# Initialization
-# ------------------------------
-pygame.init()
-pygame.mixer.init()
-SFX_VOLUME   = 0.3
-MUSIC_VOLUME = 0.3
-fireworks_played = False
-game_over_sound_played = False
-SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Finn vs Ice King Boss")
-clock = pygame.time.Clock()
-FPS = 90
-SPIKE_BLOCK_DIST = 300
-
-# ------------------------------
-# Resource Paths    
-# ------------------------------
-BASE = Path("assets") / "stage2_assets"
-
-background = pygame.image.load(BASE / "Ice_Background.png").convert()
-background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-backgroundColor = (0, 0, 0)
-
-finn_sheet           = spritesheet1.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
-ice_king_sheet_image = pygame.image.load(BASE / "Ice King movements.png").convert_alpha()
-death                = pygame.image.load(BASE / "ice king death.png").convert_alpha()
-boss_powers          = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
-powers2              = pygame.image.load(BASE / "ice spikes.png").convert_alpha()
-finalpowers          = pygame.image.load(BASE / "ice cubes.png").convert_alpha()
-barrier              = pygame.image.load(BASE / "wall.png").convert_alpha()
-rock_img             = pygame.image.load(BASE / "falling rock.png").convert()
-slash_img            = pygame.image.load(BASE / "sword swing effect.png").convert_alpha()
-hit_img              = pygame.image.load(BASE / "sword hit effect.png").convert_alpha()
-clash_img            = pygame.image.load(BASE / "clashing effect.png").convert_alpha()
-explosion_img        = pygame.image.load(BASE / "explosion effect.png").convert_alpha()
-tutorial_images = [
-    pygame.image.load(BASE / "control tutorials.jpg").convert(),
-    pygame.image.load(BASE / "snowball tutorial.png").convert(),
-    pygame.image.load(BASE / "ice spike tutorial.png").convert(),
-    pygame.image.load(BASE / "ice cube tutorial.png").convert()
-]
-cutscene_images = [
-    pygame.image.load(BASE / "finn face mountain cutscene.png").convert(),
-    pygame.image.load(BASE / "finn go up mountain cutscene.png").convert(),
-    pygame.image.load(BASE / "finn face ice king cutscene.png").convert()
-]
-cutscene_images = [pygame.transform.scale(img, (SCREEN_WIDTH, SCREEN_HEIGHT)) for img in cutscene_images]
-final_cutscene = pygame.image.load(BASE / "finn saves PB cutscene.png").convert()
-final_cutscene = pygame.transform.scale(final_cutscene, (SCREEN_WIDTH, SCREEN_HEIGHT))
-victory_screen = pygame.image.load(BASE / "victory screen.png").convert()
-victory_screen = pygame.transform.scale(victory_screen, (SCREEN_WIDTH, SCREEN_HEIGHT))
-iceking_health_full  = pygame.transform.scale(
-    pygame.image.load(BASE / "stamina1.png").convert_alpha(), (20, 40)
-)
-iceking_health_empty = pygame.transform.scale(
-    pygame.image.load(BASE / "stamina2.png").convert_alpha(), (20, 40)
-)
-rock_img.set_colorkey((0, 0, 0))
-rock_chunk_img = rock_img.convert_alpha()
-rock_chunk_img.fill((100, 200, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
-finn_img             = pygame.image.load(BASE / "finn_icon.PNG").convert_alpha()
-finn_icon            = pygame.transform.scale(finn_img, (110, 110))
-ice_king_img         = pygame.image.load(BASE / "iceking_icon.PNG").convert_alpha()
-iceking_icon         = pygame.transform.scale(ice_king_img, (110, 110))
-pb_img               = pygame.image.load(BASE / "PB icon.PNG").convert_alpha()
-pb_icon              = pygame.transform.scale(pb_img, (110, 110))
-dialog_box           = pygame.image.load(BASE / "Premade dialog box medium.png").convert_alpha()
-dialogue_box_img     = pygame.transform.scale(dialog_box, (800, 150))
-dialog_font          = pygame.font.Font(BASE / "PressStart2P.ttf", 12)
-tutorial_font        = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
-text_font            = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
-# Load Finn’s sword SFX
-sword_swoosh_sound = pygame.mixer.Sound(BASE / "mixkit-metal-hit-woosh-1485.wav")
-sword_swoosh_sound.set_volume(SFX_VOLUME)
-sword_hit_sound    = pygame.mixer.Sound(BASE / "mixkit-dagger-woosh-1487.wav")
-sword_hit_sound.set_volume(SFX_VOLUME)
-metal_strike_sound = pygame.mixer.Sound(BASE / "mixkit-metallic-sword-strike-2160.wav")
-metal_strike_sound.set_volume(SFX_VOLUME)
-#Ice King sound effect
-ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
-ice_cube_sound.set_volume(SFX_VOLUME)
-ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
-ice_ball_sound.set_volume(SFX_VOLUME)
-ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
-ice_spike_sound.set_volume(SFX_VOLUME)
-#Stage 2 cutscene sound effect
-cutscene_drone_sound = pygame.mixer.Sound(BASE / "drone-high-tension-and-suspense-background-162365.mp3")
-cutscene_drone_sound.set_volume(SFX_VOLUME) 
-dialogue_bgm = pygame.mixer.Sound(BASE / "merx-market-song-33936.mp3")
-dialogue_bgm.set_volume(SFX_VOLUME)
-click_sound = pygame.mixer.Sound(BASE / "ui-button-click-8-341030.mp3")
-click_sound.set_volume(SFX_VOLUME)
-victory_sound = pygame.mixer.Sound(BASE / "orchestral-win-331233.mp3")
-victory_sound.set_volume(MUSIC_VOLUME)  
-fireworks_sound = pygame.mixer.Sound(BASE / "fireworks-29629.mp3")
-fireworks_sound.set_volume(1)  
-game_over_sound = pygame.mixer.Sound(BASE / "kl-peach-game-over-iii-142453.mp3")
-game_over_sound.set_volume(SFX_VOLUME)
-restart_sound = pygame.mixer.Sound(BASE/"button-124476.mp3")
-restart_sound.set_volume(1)
-new_victory_sound = pygame.mixer.Sound(BASE / "goodresult-82807.mp3")
-new_victory_sound.set_volume(MUSIC_VOLUME)  
-
-boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
-abilities = spritesheet1.SpriteSheet(boss_powers)
-spikes_ss = spritesheet1.SpriteSheet(powers2)
-cubes_ss  = spritesheet1.SpriteSheet(finalpowers)
-defeat_ss = spritesheet1.SpriteSheet(death)
-wall_ss   = spritesheet1.SpriteSheet(barrier)
-swing_ss  = spritesheet1.SpriteSheet(slash_img)
-hit_ss    = spritesheet1.SpriteSheet(hit_img)
-clash_ss  = spritesheet1.SpriteSheet(clash_img)
-explode_ss = spritesheet1.SpriteSheet(explosion_img)
 
 # ------------------------------
 # Helper to resize images
@@ -134,19 +17,20 @@ def resizeObject(img, scale):
 # HealthBar UI
 # ------------------------------
 class HealthBar():
-    def __init__(self):
+    def __init__(self, images, damage_sound, heal_sound, font):
         self.max_health = 12
         self.current_health = 12
         self.x = 100
         self.y = 50
-        self.images = []
+        self.images = images
         for i in range(1,4):
             img = pygame.image.load(BASE / f"heart{i}.png").convert_alpha()
             img = resizeObject(img, 4)
             self.images.append(img)
 
-        self.take_damage_sound_effect = pygame.mixer.Sound(BASE / "take damage.mp3")
-        self.heal_sound_effect        = pygame.mixer.Sound(BASE / "heal.mp3")
+        self.take_damage_sound_effect = damage_sound
+        self.heal_sound_effect        = heal_sound
+        self.font = font
 
     def draw(self, surf):
         full = self.current_health // 2
@@ -161,8 +45,7 @@ class HealthBar():
             surf.blit(self.images[2], (x, self.y)); x += 40
         health_ratio = self.current_health / self.max_health
         percentage = int(health_ratio * 100)
-        font = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
-        text = font.render(f"{percentage}%", True, (255, 255, 255))
+        text = self.font.render(f"{percentage}%", True, (255, 255, 255))
         text_rect = text.get_rect(center=(self.x + 120, self.y - 20))
         surf.blit(text, text_rect)
 
@@ -176,9 +59,6 @@ class HealthBar():
             self.current_health = min(self.max_health, self.current_health + amount)
             self.heal_sound_effect.play()
 
-# Instantiate HealthBar
-health_bar = HealthBar()
-
 # ------------------------------
 # Finn Animation Setup
 # ------------------------------
@@ -188,53 +68,6 @@ UNWANTED_COLORS = [
     (0,254,81),(0,253,81),(0,250,79),(0,251,79),
     (0,162,232)
 ]
-
-finn_steps    = [10, 10, 10, 10, 7]  # Right, Left, Down, Up, Attack
-attack_sizes  = [
-    (67.5,175),(67.5,175),(67.9,175),
-    (68.5,175),(69,175),(69.4,175),(69.4,175)
-]
-
-Finn_animations = []
-frame_counter   = 0
-for action_idx, count in enumerate(finn_steps):
-    frames = []
-    for i in range(count):
-        if action_idx == 4:
-            w, h = attack_sizes[i]
-            img = finn_sheet.get_image(frame_counter, w, h, 1.5, UNWANTED_COLORS)
-        elif action_idx == 2:
-            img = finn_sheet.get_image(frame_counter, 66.48, 92, 1.5, UNWANTED_COLORS)
-        elif action_idx == 3:
-            img = finn_sheet.get_image(frame_counter, 64.55, 92, 1.5, UNWANTED_COLORS)
-        else:
-            img = finn_sheet.get_image(frame_counter, 66, 88, 1.5, UNWANTED_COLORS)
-        frames.append(img)
-        frame_counter += 1
-    Finn_animations.append(frames)
-
-finn_x, finn_y       = 100, 600
-finn_speed           = 4
-finn_slow_speed      = 2 
-finn_action          = 0
-finn_frame           = 0
-finn_attacking       = False
-finn_last_update     = pygame.time.get_ticks()
-Finn_animation_cd    = 100
-attack_damage_done   = False
-finn_slowed          = False
-slow_start_time      = 0
-slow_duration        = 2000
-finn_blocked         = False
-freeze_duration      = 3000
-freeze_start_time    = 0
-finn_flash           = False
-flash_start_time     = 0
-flash_duration       = 500 
-tutorial_active      = True
-tutorial_stage       = 0
-game_over            = False
-death_screen_time    = None
 
 # ------------------------------
 # Ice King & Effects Classes
@@ -716,190 +549,6 @@ class GroundCrack:
         img.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)
         surface.blit(img, (self.x, self.y))
 
-# ------------------------------
-# Build Boss Animations
-# ------------------------------
-idle_animation, attack_animation, spike_animation, defeated_animation = [], [], [], []
-snowball_fly_frames, snowball_impact_frames = [], []
-icespike_frames, cube_frames = [], []
-barrier_frames = []
-slashing_frames = []
-hitting_frames = []
-clashing_frames = []
-explosion_frames = []
-steam_emitters = []
-
-idle_w, attack_w = 72, 149
-sprite_h         = 76
-scale            = 1.8
-spike_w, spike_h = 139, 100
-snow_w, snow_h, snow_scale = 62, 46, 2
-laser_w, laser_h, laser_scale = 35, 400, 0.8
-cube_w, cube_h, cube_scale = 98, 98, 0.8
-defeated_w, defeated_h = 80, 90
-wall_w, wall_h = 104, 440
-swing_w, swing_h = 70, 72
-hit_w, hit_h = 74, 68
-clash_w, clash_h = 64, 70
-explode_w, explode_h = 64, 70
-remove_colors = [(0,0,0)]
-
-# Load ice king animations
-for i in reversed(range(10)):
-    idle_animation.append(boss_ss.get_image(i, idle_w, sprite_h, scale, remove_colors))
-for i in reversed(range(10,15)):
-    attack_animation.append(boss_ss.get_image(i, attack_w, sprite_h, scale, remove_colors))
-for i in reversed(range(20,26)):
-    spike_animation.append(boss_ss.get_image(i, spike_w, spike_h, scale, remove_colors))
-for i in reversed(range(8)):
-    defeated_animation.append(defeat_ss.get_image(i, defeated_w, defeated_h, scale, remove_colors))
-
-# Load snowballs
-for i in range(4):
-    snowball_fly_frames.append(abilities.get_image(i, snow_w, snow_h, snow_scale, remove_colors))
-snowball_impact_frames = snowball_fly_frames[1:]
-
-# Load ice spike warnings & frames
-for i in range(1,23):
-    icespike_frames.append(spikes_ss.get_image(i, 61.7, 315, 2, remove_colors))
-ice_spike_warning_img = spikes_ss.get_image(0, laser_w, laser_h, laser_scale, remove_colors)
-
-# Load ice cubes
-for i in range(3):
-    cube_frames.append(cubes_ss.get_image(i, cube_w, cube_h, cube_scale, remove_colors))
-
-for i in range(14):
-    barrier_frames.append(wall_ss.get_image(i, wall_w, wall_h, 2, remove_colors))
-
-for i in range(14):
-    slashing_frames.append(swing_ss.get_image(i, swing_w, swing_h, 1.5, remove_colors))
-
-for i in range(13):
-    hitting_frames.append(hit_ss.get_image(i, hit_w, hit_h, 1.5, remove_colors))
-
-for i in range(14):
-    clashing_frames.append(clash_ss.get_image(i, clash_w, clash_h, 1.5, remove_colors))
-
-for i in range(9):
-    explosion_frames.append(explode_ss.get_image(i, explode_w, explode_h, 1.5, remove_colors))
-
-for i in range(len(tutorial_images)):
-    tutorial_images[i] = pygame.transform.scale(tutorial_images[i], (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-# ------------------------------
-# Phase Logic & Helpers
-# ------------------------------
-ice_king = IceKing()
-ice_king_glow = IceKingGlow()
-snowballs, warnings, spikes, ice_cubes = [], [], [], []
-cube_trails = []
-snowflakes = [Snowflake() for _ in range(50)]
-falling_shards = []
-falling_snow_chunks = []
-icicles = []
-ice_shards = []
-ground_cracks = []
-
-ice_xpos, ice_ypos, original_ypos = 1075, 450, 450
-ice_speed, ice_ydir = 2, 0
-
-frame_cd        = 250
-last_update     = pygame.time.get_ticks()
-state_timer     = pygame.time.get_ticks()
-animation_frame = 0
-
-fight_started   = False
-fight_start     = 0
-phase2_started  = False
-phase3_started  = False
-snow_phase2_start = 0
-cube_phase3_start = 0
-spawned_snow    = False
-spawned_cube    = False
-ice_spike_loops = 0
-shake_timer = 0
-shake_duration = 0  # milliseconds to shake
-shake_magnitude = 20
-fall_effect_duration = 1000  # milliseconds
-ice_king_hit = False
-hit_overlay_duration = 500 
-hit_overlay_start_time = 0
-charging_ice_cube = False
-charging_start_time = 0
-charging_duration = 2500
-charging_started = False
-charging_just_finished = False
-death_start_time = None
-explosion_index = None
-explosion_timer = None
-ice_king_fully_defeated = False
-defeated_target_y = 450
-defeated_drop_speed = 4
-dialogue_queue = []
-current_dialogue = None
-dialogue_start_time = 0
-parry_dialogue_triggered_this_cycle = False
-defeat_dialogue_shown = False
-pending_phase = None
-phase_dialogue_active = False
-finn_forced_position_x = None
-phase1_dialogue_queued = False
-cutscene_stage = 0
-cutscene_active = True
-cutscene_dialogue_shown = False
-final_cutscene_active = False
-final_cutscene_shown = False
-defeat_dialogue_finished = False
-victory_screen_active = False
-cutscene_sound_playing = False
-
-tutorial_titles = ["Snowball Attack", "Ice Spike Danger", "Reflect Ice Cubes"]
-tutorial_texts = [
-    "Ice King shoots snowballs. Avoid them or you'll be slowed down temporarily.",
-    "Spikes erupt from the ground. Watch for the glowing warning and avoid them.",
-    "You can reflect ice cubes with your sword. Time your attack and send them flying back!"
-]
-cutscene_dialogue = {
-    "intro": [
-        {"speaker": "Finn", "line": "I'm coming to save you, Princess Bubblegum!"}
-    ],
-    "final": [
-        {"speaker": "Princess Bubblegum", "line": "Finn! You saved me!"},
-        {"speaker": "Finn", "line": "Alright, now let's go back and celebrate this momentous occasion!"},
-        {"speaker": "Finn", "line": "And no you are not invited, Ice King!"}
-    ]
-}
-battle_dialogue = {
-    "phase1": [
-        {"speaker": "Ice King", "line": "You dare challenge the Ice King!?"},
-        {"speaker": "Finn", "line": "Yeah! I'm not afraid of your frosty face!"},
-        {"speaker": "Ice King", "line": "Then prepare to get frozen in time!"},
-        {"speaker": "Finn", "line": "Bring it on, Ice King!"}
-    ],
-    "phase2": [
-        {"speaker": "Ice King", "line": "Witness the wrath of my spikes!"},
-        {"speaker": "Finn", "line": "Nothing can stop me when I'm saving my friends, especially not snow cones!"}
-    ],
-    "phase3": [
-        {"speaker": "Ice King", "line": "You've made it this far... but are you brave enough to win her over by winning against me!?"},
-        {"speaker": "Finn", "line": "Let's end this once and for all, Ice King!"},
-        {"speaker": "Finn", "line": "And I'm ending you with my sword!"},
-    ],
-    "parry": [
-        {"speaker": "Ice King", "line": "Parry this, you crusty do-gooder!", "duration": 1500}
-    ],
-    "defeat": [
-        {"speaker": "Ice King", "line": "Ugh... fine..."},
-        {"speaker": "Ice King", "line": "You can have her..."}
-    ]
-}
-
-icon_map = {
-    "Finn": finn_icon,
-    "Ice King": iceking_icon,
-    "Princess Bubblegum": pb_icon
-}
-
 def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines = []
@@ -941,7 +590,7 @@ def draw_dialogue(surface, speaker, line):
     # Calculate available space for text
     text_x = icon_x + 180
     max_text_width = box_width - (text_x - box_x) - 40  # right padding
-    line_spacing = 28  # Adjust for font size and line height
+    line_spacing = 28
 
     # Wrap the line
     wrapped_lines = wrap_text(line, dialog_font, max_text_width)
@@ -1150,7 +799,7 @@ def phase2(now):
                 warnings.remove(w)
                 shake_duration = 3000
                 shake_timer = pygame.time.get_ticks()
-                ground_cracks.append(GroundCrack(w.x - 55, 675))  # Adjust Y to be near spike base
+                ground_cracks.append(GroundCrack(w.x - 55, 675))
 
         # Update & draw live spikes
         for sp in spikes[:]:
@@ -1255,7 +904,7 @@ def phase3(now):
             warnings.remove(w)
             shake_duration = 3000
             shake_timer = pygame.time.get_ticks()
-            ground_cracks.append(GroundCrack(w.x - 55, 675))  # Adjust Y to be near spike base
+            ground_cracks.append(GroundCrack(w.x - 55, 675))
     for sp in spikes[:]:
         if sp.update(): spikes.remove(sp)
         else: sp.draw(screen)
@@ -1278,12 +927,13 @@ def reset_game():
     global game_over_sound_played
     global victory_sound_played
     global defeat_dialogue_finished, final_cutscene_active, final_cutscene_shown
+    global heart_images, damage_sound, heal_sound, font
+    health_bar = HealthBar(heart_images, damage_sound, heal_sound, font)
+
     game_over_sound_played = False
     victory_sound_played = False
     fireworks_played = False
     game_over_sound_played = False
-    # Reset player
-    health_bar = HealthBar()
     finn_x, finn_y = 100, 600
     finn_action = 0
     finn_attacking = False
@@ -1343,123 +993,1012 @@ def reset_game():
 # ------------------------------
 # Main Game Loop
 # ------------------------------
-ice_king_state = "idle"
-phase3_ready = False
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            click_sound.play()
-            # 1. Dismiss current dialogue first
-            if current_dialogue:
-                current_dialogue = None
+def run_stage2():
+    global screen, clock, BASE, SPIKE_BLOCK_DIST
+    global SCREEN_WIDTH, SCREEN_HEIGHT, FPS, SFX_VOLUME, MUSIC_VOLUME
+    global health_bar, ice_king, ice_king_glow
+    global ice_king_state, phase3_ready
+    global dialogue_is_blocking, full_rect, rock_chunk_img, tutorial_images
+    global metal_strike_sound, ice_ball_sound, ice_spike_sound, ice_cube_sound
+    global screen, clock, BASE, SPIKE_BLOCK_DIST
+    global health_bar, ice_king, ice_king_glow
+    global ice_king_state, phase3_ready
+    global finn_sheet, iceking_health_empty, iceking_health_full, finn_icon, iceking_icon, pb_icon, dialogue_box_img, dialog_font
+    global boss_ss, abilities, spikes_ss, cubes_ss, defeat_ss, wall_ss, swing_ss, hit_ss, clash_ss, explode_ss
+    global health_bar, ice_king, ice_king_glow
+    global finn_x, finn_y, finn_speed, finn_slow_speed, slow_start_time, slow_duration
+    global snowball_impact_frames, ice_spike_warning_img
+    global game_over, death_screen_time
+    global finn_steps, attack_sizes
+    global tutorial_active, tutorial_stage
+    global finn_blocked, freeze_duration, freeze_start_time, finn_slowed
+    global finn_flash, flash_start_time, flash_duration
+    global finn_action, finn_frame, finn_attacking
+    global finn_last_update, Finn_animation_cd, attack_damage_done
+    global attack_animation, snowball_fly_frames, idle_animation, spike_animation, icespike_frames, cube_frames
+    global snowballs, warnings, spikes, ice_cubes, cube_trails
+    global snowflakes, falling_shards, falling_snow_chunks, icicles, ice_shards, ground_cracks
+    global ice_xpos, ice_ypos, original_ypos, ice_speed, ice_ydir
+    global frame_cd, last_update, state_timer, animation_frame
+    global fight_started, fight_start, phase2_started, phase3_started
+    global snow_phase2_start, cube_phase3_start, spawned_snow, spawned_cube, ice_spike_loops
+    global shake_timer, shake_duration, shake_magnitude, fall_effect_duration
+    global ice_king_hit, hit_overlay_duration, hit_overlay_start_time
+    global charging_ice_cube, charging_start_time, charging_duration, charging_started, charging_just_finished
+    global death_start_time, explosion_index, explosion_timer, ice_king_fully_defeated
+    global defeated_target_y, defeated_drop_speed
+    global dialogue_queue, current_dialogue, dialogue_start_time
+    global parry_dialogue_triggered_this_cycle, defeat_dialogue_shown, pending_phase, phase_dialogue_active
+    global finn_forced_position_x, phase1_dialogue_queued, cutscene_stage, cutscene_active
+    global cutscene_dialogue_shown, final_cutscene_active, final_cutscene_shown, defeat_dialogue_finished
+    global victory_screen_active, cutscene_sound_playing
+    global tutorial_titles, tutorial_texts, cutscene_dialogue, battle_dialogue, icon_map
+    global steam_emitters, dialogue_bgm
+    global heart_images, damage_sound, heal_sound, font
+    global ice_flash_duration, ice_flash_start
+    global clash_start_frame, clash_anim_frame, clash_last_update
+    global victory_sound, new_victory_sound
+    pygame.init()
+    pygame.mixer.init()
+    SFX_VOLUME   = 0.3
+    MUSIC_VOLUME = 0.3
+    fireworks_played = False
+    game_over_sound_played = False
+    SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+    pygame.display.set_caption("Finn vs Ice King Boss")
+    clock = pygame.time.Clock()
+    FPS = 90
+    SPIKE_BLOCK_DIST = 300
+    BASE = Path("assets") / "stage2_assets"
 
-            # 2. Then handle cutscene progression
-            elif cutscene_active:
-                cutscene_stage += 1
-                cutscene_dialogue_shown = False
-                if cutscene_stage >= len(cutscene_images):
-                    cutscene_active = False
-                    cutscene_drone_sound.stop()
-                    cutscene_sound_playing = False
-                    tutorial_active = True
-                    current_dialogue = None
-                    dialogue_queue.clear()
-                    cutscene_dialogue_shown = False
-                    dialogue_bgm.fadeout(1000)
+    background = pygame.image.load(BASE / "Ice_Background.png").convert()
+    background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    backgroundColor = (0, 0, 0)
 
-            # 3. Handle final cutscene (after defeat)
-            elif final_cutscene_active:
-                if not current_dialogue and not dialogue_queue:
-                    final_cutscene_active = False
-                    victory_screen_active = True
+    finn_sheet           = spritesheet1.SpriteSheet(pygame.image.load(BASE / "Finn_Running.png").convert_alpha())
+    ice_king_sheet_image = pygame.image.load(BASE / "Ice King movements.png").convert_alpha()
+    death                = pygame.image.load(BASE / "ice king death.png").convert_alpha()
+    boss_powers          = pygame.image.load(BASE / "snowball effects.png").convert_alpha()
+    powers2              = pygame.image.load(BASE / "ice spikes.png").convert_alpha()
+    finalpowers          = pygame.image.load(BASE / "ice cubes.png").convert_alpha()
+    barrier              = pygame.image.load(BASE / "wall.png").convert_alpha()
+    rock_img             = pygame.image.load(BASE / "falling rock.png").convert()
+    slash_img            = pygame.image.load(BASE / "sword swing effect.png").convert_alpha()
+    hit_img              = pygame.image.load(BASE / "sword hit effect.png").convert_alpha()
+    clash_img            = pygame.image.load(BASE / "clashing effect.png").convert_alpha()
+    explosion_img        = pygame.image.load(BASE / "explosion effect.png").convert_alpha()
+    tutorial_images = [
+        pygame.image.load(BASE / "control tutorials.jpg").convert(),
+        pygame.image.load(BASE / "snowball tutorial.png").convert(),
+        pygame.image.load(BASE / "ice spike tutorial.png").convert(),
+        pygame.image.load(BASE / "ice cube tutorial.png").convert()
+    ]
+    cutscene_images = [
+        pygame.image.load(BASE / "finn face mountain cutscene.png").convert(),
+        pygame.image.load(BASE / "finn go up mountain cutscene.png").convert(),
+        pygame.image.load(BASE / "finn face ice king cutscene.png").convert()
+    ]
+    cutscene_images = [pygame.transform.scale(img, (SCREEN_WIDTH, SCREEN_HEIGHT)) for img in cutscene_images]
+    final_cutscene = pygame.image.load(BASE / "finn saves PB cutscene.png").convert()
+    final_cutscene = pygame.transform.scale(final_cutscene, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    victory_screen = pygame.image.load(BASE / "victory screen.png").convert()
+    victory_screen = pygame.transform.scale(victory_screen, (SCREEN_WIDTH, SCREEN_HEIGHT))
+    iceking_health_full  = pygame.transform.scale(
+        pygame.image.load(BASE / "stamina1.png").convert_alpha(), (20, 40)
+    )
+    iceking_health_empty = pygame.transform.scale(
+        pygame.image.load(BASE / "stamina2.png").convert_alpha(), (20, 40)
+    )
+    rock_img.set_colorkey((0, 0, 0))
+    rock_chunk_img = rock_img.convert_alpha()
+    rock_chunk_img.fill((100, 200, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
+    finn_img             = pygame.image.load(BASE / "finn_icon.PNG").convert_alpha()
+    finn_icon            = pygame.transform.scale(finn_img, (110, 110))
+    ice_king_img         = pygame.image.load(BASE / "iceking_icon.PNG").convert_alpha()
+    iceking_icon         = pygame.transform.scale(ice_king_img, (110, 110))
+    pb_img               = pygame.image.load(BASE / "PB icon.PNG").convert_alpha()
+    pb_icon              = pygame.transform.scale(pb_img, (110, 110))
+    dialog_box           = pygame.image.load(BASE / "Premade dialog box medium.png").convert_alpha()
+    heart_images         = [resizeObject(pygame.image.load(BASE / f"heart{i}.png").convert_alpha(), 4) for i in range(1, 4)]
+    damage_sound         = pygame.mixer.Sound(BASE / "take damage.mp3")
+    heal_sound           = pygame.mixer.Sound(BASE / "heal.mp3")
+    font                 = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
+    dialogue_box_img     = pygame.transform.scale(dialog_box, (800, 150))
+    dialog_font          = pygame.font.Font(BASE / "PressStart2P.ttf", 12)
+    tutorial_font        = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
+    text_font            = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
+    # Load Finn’s sword SFX
+    sword_swoosh_sound = pygame.mixer.Sound(BASE / "mixkit-metal-hit-woosh-1485.wav")
+    sword_swoosh_sound.set_volume(SFX_VOLUME)
+    sword_hit_sound    = pygame.mixer.Sound(BASE / "mixkit-dagger-woosh-1487.wav")
+    sword_hit_sound.set_volume(SFX_VOLUME)
+    metal_strike_sound = pygame.mixer.Sound(BASE / "mixkit-metallic-sword-strike-2160.wav")
+    metal_strike_sound.set_volume(SFX_VOLUME)
+    #Ice King sound effect
+    ice_cube_sound = pygame.mixer.Sound(BASE / "Ice Cube sound.mp3")
+    ice_cube_sound.set_volume(SFX_VOLUME)
+    ice_ball_sound = pygame.mixer.Sound(BASE / "Ice ball sound.mp3")
+    ice_ball_sound.set_volume(SFX_VOLUME)
+    ice_spike_sound = pygame.mixer.Sound(BASE / "Ice Spike sound.mp3")
+    ice_spike_sound.set_volume(SFX_VOLUME)
+    #Stage 2 cutscene sound effect
+    cutscene_drone_sound = pygame.mixer.Sound(BASE / "drone-high-tension-and-suspense-background-162365.mp3")
+    cutscene_drone_sound.set_volume(SFX_VOLUME) 
+    dialogue_bgm = pygame.mixer.Sound(BASE / "merx-market-song-33936.mp3")
+    dialogue_bgm.set_volume(SFX_VOLUME)
+    click_sound = pygame.mixer.Sound(BASE / "ui-button-click-8-341030.mp3")
+    click_sound.set_volume(SFX_VOLUME)
+    victory_sound = pygame.mixer.Sound(BASE / "orchestral-win-331233.mp3")
+    victory_sound.set_volume(MUSIC_VOLUME)  
+    fireworks_sound = pygame.mixer.Sound(BASE / "fireworks-29629.mp3")
+    fireworks_sound.set_volume(1)  
+    game_over_sound = pygame.mixer.Sound(BASE / "kl-peach-game-over-iii-142453.mp3")
+    game_over_sound.set_volume(SFX_VOLUME)
+    restart_sound = pygame.mixer.Sound(BASE/"button-124476.mp3")
+    restart_sound.set_volume(1)
+    new_victory_sound = pygame.mixer.Sound(BASE / "goodresult-82807.mp3")
+    new_victory_sound.set_volume(MUSIC_VOLUME)  
 
-            # 4. Advance tutorial normally
-            elif tutorial_active:
-                tutorial_stage += 1
-                if tutorial_stage >= len(tutorial_images):
-                    tutorial_active = False
-            
-            elif victory_screen_active:
-                running = False
-        elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-            restart_sound.play()
-            reset_game()
+    boss_ss   = spritesheet1.SpriteSheet(ice_king_sheet_image)
+    abilities = spritesheet1.SpriteSheet(boss_powers)
+    spikes_ss = spritesheet1.SpriteSheet(powers2)
+    cubes_ss  = spritesheet1.SpriteSheet(finalpowers)
+    defeat_ss = spritesheet1.SpriteSheet(death)
+    wall_ss   = spritesheet1.SpriteSheet(barrier)
+    swing_ss  = spritesheet1.SpriteSheet(slash_img)
+    hit_ss    = spritesheet1.SpriteSheet(hit_img)
+    clash_ss  = spritesheet1.SpriteSheet(clash_img)
+    explode_ss = spritesheet1.SpriteSheet(explosion_img)
 
-    if game_over:
-        if death_screen_time is None:
-            death_screen_time = pygame.time.get_ticks()
-        if not game_over_sound_played:
-                game_over_sound.play()
-                game_over_sound_played = True
-        elif pygame.time.get_ticks() - death_screen_time > 200:
-            # Show death overlay
-            overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
-            screen.blit(overlay, (0, 0))
+    health_bar = HealthBar(heart_images, damage_sound, heal_sound, font)
+    ice_king = IceKing()
+    ice_king_glow = IceKingGlow()
+    Finn_animations = []
+    frame_counter   = 0
+    finn_steps    = [10, 10, 10, 10, 7]  # Right, Left, Down, Up, Attack
+    attack_sizes  = [
+        (67.5,175),(67.5,175),(67.9,175),
+        (68.5,175),(69,175),(69.4,175),(69.4,175)
+    ]
+    for action_idx, count in enumerate(finn_steps):
+        frames = []
+        for i in range(count):
+            if action_idx == 4:
+                w, h = attack_sizes[i]
+                img = finn_sheet.get_image(frame_counter, w, h, 1.5, UNWANTED_COLORS)
+            elif action_idx == 2:
+                img = finn_sheet.get_image(frame_counter, 66.48, 92, 1.5, UNWANTED_COLORS)
+            elif action_idx == 3:
+                img = finn_sheet.get_image(frame_counter, 64.55, 92, 1.5, UNWANTED_COLORS)
+            else:
+                img = finn_sheet.get_image(frame_counter, 66, 88, 1.5, UNWANTED_COLORS)
+            frames.append(img)
+            frame_counter += 1
+        Finn_animations.append(frames)
 
-            font_big = pygame.font.Font(BASE / "PressStart2P.ttf", 48)
-            death_text = font_big.render("YOU DIED", True, (255, 0, 0))
-            screen.blit(death_text, (SCREEN_WIDTH // 2 - death_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
+    finn_x, finn_y       = 100, 600
+    finn_speed           = 4
+    finn_slow_speed      = 2 
+    finn_action          = 0
+    finn_frame           = 0
+    finn_attacking       = False
+    finn_last_update     = pygame.time.get_ticks()
+    Finn_animation_cd    = 100
+    attack_damage_done   = False
+    finn_slowed          = False
+    slow_start_time      = 0
+    slow_duration        = 2000
+    finn_blocked         = False
+    freeze_duration      = 3000
+    freeze_start_time    = 0
+    finn_flash           = False
+    flash_start_time     = 0
+    flash_duration       = 500 
+    tutorial_active      = True
+    tutorial_stage       = 0
+    game_over            = False
+    death_screen_time    = None
 
-            font_small = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
-            tip = font_small.render("Press R to Restart", True, (255, 255, 255))
-            screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
+    idle_animation, attack_animation, spike_animation, defeated_animation = [], [], [], []
+    snowball_fly_frames, snowball_impact_frames = [], []
+    icespike_frames, cube_frames = [], []
+    barrier_frames = []
+    slashing_frames = []
+    hitting_frames = []
+    clashing_frames = []
+    explosion_frames = []
+    steam_emitters = []
 
-        pygame.display.flip()
-        clock.tick(FPS)
-        continue 
+    idle_w, attack_w = 72, 149
+    sprite_h         = 76
+    scale            = 1.8
+    spike_w, spike_h = 139, 100
+    snow_w, snow_h, snow_scale = 62, 46, 2
+    laser_w, laser_h, laser_scale = 35, 400, 0.8
+    cube_w, cube_h, cube_scale = 98, 98, 0.8
+    defeated_w, defeated_h = 80, 90
+    wall_w, wall_h = 104, 440
+    swing_w, swing_h = 70, 72
+    hit_w, hit_h = 74, 68
+    clash_w, clash_h = 64, 70
+    explode_w, explode_h = 64, 70
+    remove_colors = [(0,0,0)]
 
-    now = pygame.time.get_ticks()
-    dialogue_is_blocking = (current_dialogue and current_dialogue.get("type") != "parry")
-    phase3_ready = (ice_king_state == "phase3" and not dialogue_is_blocking)
-    offset_x, offset_y = 0, 0
-    shake_elapsed = pygame.time.get_ticks() - shake_timer
+    # Load ice king animations
+    for i in reversed(range(10)):
+        idle_animation.append(boss_ss.get_image(i, idle_w, sprite_h, scale, remove_colors))
+    for i in reversed(range(10,15)):
+        attack_animation.append(boss_ss.get_image(i, attack_w, sprite_h, scale, remove_colors))
+    for i in reversed(range(20,26)):
+        spike_animation.append(boss_ss.get_image(i, spike_w, spike_h, scale, remove_colors))
+    for i in reversed(range(8)):
+        defeated_animation.append(defeat_ss.get_image(i, defeated_w, defeated_h, scale, remove_colors))
+
+    # Load snowballs
+    for i in range(4):
+        snowball_fly_frames.append(abilities.get_image(i, snow_w, snow_h, snow_scale, remove_colors))
+    snowball_impact_frames = snowball_fly_frames[1:]
+
+    # Load ice spike warnings & frames
+    for i in range(1,23):
+        icespike_frames.append(spikes_ss.get_image(i, 61.7, 315, 2, remove_colors))
+    ice_spike_warning_img = spikes_ss.get_image(0, laser_w, laser_h, laser_scale, remove_colors)
+
+    # Load ice cubes
+    for i in range(3):
+        cube_frames.append(cubes_ss.get_image(i, cube_w, cube_h, cube_scale, remove_colors))
+
+    for i in range(14):
+        barrier_frames.append(wall_ss.get_image(i, wall_w, wall_h, 2, remove_colors))
+
+    for i in range(14):
+        slashing_frames.append(swing_ss.get_image(i, swing_w, swing_h, 1.5, remove_colors))
+
+    for i in range(13):
+        hitting_frames.append(hit_ss.get_image(i, hit_w, hit_h, 1.5, remove_colors))
+
+    for i in range(14):
+        clashing_frames.append(clash_ss.get_image(i, clash_w, clash_h, 1.5, remove_colors))
+
+    for i in range(9):
+        explosion_frames.append(explode_ss.get_image(i, explode_w, explode_h, 1.5, remove_colors))
+
+    for i in range(len(tutorial_images)):
+        tutorial_images[i] = pygame.transform.scale(tutorial_images[i], (SCREEN_WIDTH, SCREEN_HEIGHT))
     
-    if shake_elapsed < shake_duration:
-        offset_x = random.randint(-shake_magnitude, shake_magnitude)
-        offset_y = random.randint(-shake_magnitude, shake_magnitude)
+    snowballs, warnings, spikes, ice_cubes = [], [], [], []
+    cube_trails = []
+    snowflakes = [Snowflake() for _ in range(50)]
+    falling_shards = []
+    falling_snow_chunks = []
+    icicles = []
+    ice_shards = []
+    ground_cracks = []
 
-        # Only spawn particles for a shorter period
-        if shake_elapsed < fall_effect_duration:
-            if len(falling_shards) < 20 and random.random() < 0.8:
-                falling_shards.append(FallingShard())
-            if len(falling_snow_chunks) < 10 and random.random() < 0.5:
-                falling_snow_chunks.append(SnowChunk())
-    screen.fill(backgroundColor)
-    if cutscene_active:
-        if not cutscene_sound_playing:
-            pygame.mixer.music.stop()
-            dialogue_bgm.play(-1)  # Loop dialogue music during cutscene
-            cutscene_sound_playing = True
-        screen.blit(cutscene_images[cutscene_stage], (0, 0))
+    ice_xpos, ice_ypos, original_ypos = 1075, 450, 450
+    ice_speed, ice_ydir = 2, 0
 
-        if current_dialogue:
-            draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
-            if pygame.time.get_ticks() - dialogue_start_time >= current_dialogue.get("duration", 999999):
-                current_dialogue = None
+    frame_cd        = 250
+    last_update     = pygame.time.get_ticks()
+    state_timer     = pygame.time.get_ticks()
+    animation_frame = 0
 
-        elif dialogue_queue:
-            current_dialogue = dialogue_queue.pop(0)
-            dialogue_start_time = pygame.time.get_ticks()
+    fight_started   = False
+    fight_start     = 0
+    phase2_started  = False
+    phase3_started  = False
+    snow_phase2_start = 0
+    cube_phase3_start = 0
+    spawned_snow    = False
+    spawned_cube    = False
+    ice_spike_loops = 0
+    shake_timer = 0
+    shake_duration = 0  # milliseconds to shake
+    shake_magnitude = 20
+    fall_effect_duration = 1000  # milliseconds
+    ice_king_hit = False
+    hit_overlay_duration = 500 
+    hit_overlay_start_time = 0
+    charging_ice_cube = False
+    charging_start_time = 0
+    charging_duration = 2500
+    charging_started = False
+    charging_just_finished = False
+    death_start_time = None
+    explosion_index = None
+    explosion_timer = None
+    ice_king_fully_defeated = False
+    defeated_target_y = 450
+    defeated_drop_speed = 4
+    dialogue_queue = []
+    current_dialogue = None
+    dialogue_start_time = 0
+    parry_dialogue_triggered_this_cycle = False
+    defeat_dialogue_shown = False
+    pending_phase = None
+    phase_dialogue_active = False
+    finn_forced_position_x = None
+    phase1_dialogue_queued = False
+    cutscene_stage = 0
+    cutscene_active = True
+    cutscene_dialogue_shown = False
+    final_cutscene_active = False
+    final_cutscene_shown = False
+    defeat_dialogue_finished = False
+    victory_screen_active = False
+    cutscene_sound_playing = False
 
-        if cutscene_stage == 0 and not cutscene_dialogue_shown and not current_dialogue and not dialogue_queue:
-            queue_dialogue(cutscene_dialogue["intro"])
-            cutscene_dialogue_shown = True
-        if not cutscene_active and cutscene_sound_playing:
-            dialogue_bgm.stop()
-            cutscene_sound_playing = False
+    tutorial_titles = ["Snowball Attack", "Ice Spike Danger", "Reflect Ice Cubes"]
+    tutorial_texts = [
+        "Ice King shoots snowballs. Avoid them or you'll be slowed down temporarily.",
+        "Spikes erupt from the ground. Watch for the glowing warning and avoid them.",
+        "You can reflect ice cubes with your sword. Time your attack and send them flying back!"
+    ]
+    cutscene_dialogue = {
+        "intro": [
+            {"speaker": "Finn", "line": "I'm coming to save you, Princess Bubblegum!"}
+        ],
+        "final": [
+            {"speaker": "Princess Bubblegum", "line": "Finn! You saved me!"},
+            {"speaker": "Finn", "line": "Alright, now let's go back and celebrate this momentous occasion!"},
+            {"speaker": "Finn", "line": "And no you are not invited, Ice King!"}
+        ]
+    }
+    battle_dialogue = {
+        "phase1": [
+            {"speaker": "Ice King", "line": "You dare challenge the Ice King!?"},
+            {"speaker": "Finn", "line": "Yeah! I'm not afraid of your frosty face!"},
+            {"speaker": "Ice King", "line": "Then prepare to get frozen in time!"},
+            {"speaker": "Finn", "line": "Bring it on, Ice King!"}
+        ],
+        "phase2": [
+            {"speaker": "Ice King", "line": "Witness the wrath of my spikes!"},
+            {"speaker": "Finn", "line": "Nothing can stop me when I'm saving my friends, especially not snow cones!"}
+        ],
+        "phase3": [
+            {"speaker": "Ice King", "line": "You've made it this far... but are you brave enough to win her over by winning against me!?"},
+            {"speaker": "Finn", "line": "Let's end this once and for all, Ice King!"},
+            {"speaker": "Finn", "line": "And I'm ending you with my sword!"},
+        ],
+        "parry": [
+            {"speaker": "Ice King", "line": "Parry this, you crusty do-gooder!", "duration": 1500}
+        ],
+        "defeat": [
+            {"speaker": "Ice King", "line": "Ugh... fine..."},
+            {"speaker": "Ice King", "line": "You can have her..."}
+        ]
+    }
 
-        pygame.display.flip()
-        clock.tick(FPS)
-        continue
-    if final_cutscene_active:
-        screen.blit(final_cutscene, (0, 0))
+    icon_map = {
+        "Finn": finn_icon,
+        "Ice King": iceking_icon,
+        "Princess Bubblegum": pb_icon
+    }
+
+    ice_king_state = "idle"
+    phase3_ready = False
+    running = True
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                click_sound.play()
+                # 1. Dismiss current dialogue first
+                if current_dialogue:
+                    current_dialogue = None
+
+                # 2. Then handle cutscene progression
+                elif cutscene_active:
+                    cutscene_stage += 1
+                    cutscene_dialogue_shown = False
+                    if cutscene_stage >= len(cutscene_images):
+                        cutscene_active = False
+                        cutscene_drone_sound.stop()
+                        cutscene_sound_playing = False
+                        tutorial_active = True
+                        current_dialogue = None
+                        dialogue_queue.clear()
+                        cutscene_dialogue_shown = False
+                        dialogue_bgm.fadeout(1000)
+
+                # 3. Handle final cutscene (after defeat)
+                elif final_cutscene_active:
+                    if not current_dialogue and not dialogue_queue:
+                        final_cutscene_active = False
+                        victory_screen_active = True
+
+                # 4. Advance tutorial normally
+                elif tutorial_active:
+                    tutorial_stage += 1
+                    if tutorial_stage >= len(tutorial_images):
+                        tutorial_active = False
+                
+                elif victory_screen_active:
+                    running = False
+            elif game_over and event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                restart_sound.play()
+                reset_game()
+
+        if game_over:
+            if death_screen_time is None:
+                death_screen_time = pygame.time.get_ticks()
+            if not game_over_sound_played:
+                    game_over_sound.play()
+                    game_over_sound_played = True
+            elif pygame.time.get_ticks() - death_screen_time > 200:
+                # Show death overlay
+                overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 180))
+                screen.blit(overlay, (0, 0))
+
+                font_big = pygame.font.Font(BASE / "PressStart2P.ttf", 48)
+                death_text = font_big.render("YOU DIED", True, (255, 0, 0))
+                screen.blit(death_text, (SCREEN_WIDTH // 2 - death_text.get_width() // 2, SCREEN_HEIGHT // 2 - 60))
+
+                font_small = pygame.font.Font(BASE / "PressStart2P.ttf", 18)
+                tip = font_small.render("Press R to Restart", True, (255, 255, 255))
+                screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT // 2 + 20))
+
+            pygame.display.flip()
+            clock.tick(FPS)
+            continue 
+
+        now = pygame.time.get_ticks()
+        dialogue_is_blocking = (current_dialogue and current_dialogue.get("type") != "parry")
+        phase3_ready = (ice_king_state == "phase3" and not dialogue_is_blocking)
+        offset_x, offset_y = 0, 0
+        shake_elapsed = pygame.time.get_ticks() - shake_timer
         
-        
+        if shake_elapsed < shake_duration:
+            offset_x = random.randint(-shake_magnitude, shake_magnitude)
+            offset_y = random.randint(-shake_magnitude, shake_magnitude)
 
+            # Only spawn particles for a shorter period
+            if shake_elapsed < fall_effect_duration:
+                if len(falling_shards) < 20 and random.random() < 0.8:
+                    falling_shards.append(FallingShard())
+                if len(falling_snow_chunks) < 10 and random.random() < 0.5:
+                    falling_snow_chunks.append(SnowChunk())
+        screen.fill(backgroundColor)
+        if cutscene_active:
+            if not cutscene_sound_playing:
+                pygame.mixer.music.stop()
+                dialogue_bgm.play(-1)  # Loop dialogue music during cutscene
+                cutscene_sound_playing = True
+            screen.blit(cutscene_images[cutscene_stage], (0, 0))
+
+            if current_dialogue:
+                draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
+                if pygame.time.get_ticks() - dialogue_start_time >= current_dialogue.get("duration", 999999):
+                    current_dialogue = None
+
+            elif dialogue_queue:
+                current_dialogue = dialogue_queue.pop(0)
+                dialogue_start_time = pygame.time.get_ticks()
+
+            if cutscene_stage == 0 and not cutscene_dialogue_shown and not current_dialogue and not dialogue_queue:
+                queue_dialogue(cutscene_dialogue["intro"])
+                cutscene_dialogue_shown = True
+            if not cutscene_active and cutscene_sound_playing:
+                dialogue_bgm.stop()
+                cutscene_sound_playing = False
+
+            pygame.display.flip()
+            clock.tick(FPS)
+            continue
+        if final_cutscene_active:
+            screen.blit(final_cutscene, (0, 0))
+            
+            if current_dialogue:
+                draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
+                duration = current_dialogue.get("duration", 999999)
+                if pygame.time.get_ticks() - dialogue_start_time >= duration:
+                    current_dialogue = None
+
+            elif dialogue_queue:
+                current_dialogue = dialogue_queue.pop(0)
+                dialogue_start_time = pygame.time.get_ticks()
+
+            elif not final_cutscene_shown:
+                fireworks_sound.stop()
+                pygame.mixer.music.stop()
+                victory_sound.play()
+                queue_dialogue(cutscene_dialogue["final"])
+                final_cutscene_shown = True
+
+            # Wait until dialogue finishes, then close final cutscene on click (handled by your event loop)
+            pygame.display.flip()
+            clock.tick(FPS)
+            continue
+
+        if victory_screen_active:
+            victory_sound.stop()
+            new_victory_sound.play()
+            screen.blit(victory_screen, (0, 0))
+
+            font_victory = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
+            tip = font_victory.render("Click to exit", True, (255, 255, 255))
+            screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT - 35))
+
+            pygame.display.flip()
+            clock.tick(FPS)
+            continue
+
+        screen.blit(background, (offset_x, offset_y))
+
+        if random.random() < 0.01:  # ~1% chance per frame
+            spawn_x = random.randint(100, SCREEN_WIDTH - 100)
+            icicles.append(Icicle(spawn_x, delay=random.randint(500, 1500)))
+
+            # ——— Finn Input & Animation ———
+        keys = pygame.key.get_pressed()
+
+        # 1) Attack
+        if not finn_attacking and keys[pygame.K_SPACE]:
+            finn_attacking     = True
+            finn_action        = 4
+            finn_frame         = 0
+            finn_last_update   = now
+            attack_damage_done = False
+            sword_swoosh_sound.play()
+
+        # 2) Handle attack animation
+        if finn_attacking:
+            if now - finn_last_update >= Finn_animation_cd:
+                finn_last_update += Finn_animation_cd
+                finn_frame      += 1
+                if finn_frame >= len(Finn_animations[finn_action]):
+                    finn_attacking = False
+                    finn_action    = 2
+                    finn_frame     = 0
+
+        # 3) Movement & directional animation
+        else:
+            moved      = False
+            new_action = finn_action
+
+            if finn_blocked or phase_dialogue_active:
+                moved = False
+            else:
+                # Normal movement handling when Finn is not frozen
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_w]:
+                    finn_y -= finn_speed
+                    new_action = 3
+                    moved = True
+                elif keys[pygame.K_s]:
+                    finn_y += finn_speed
+                    new_action = 2
+                    moved = True
+                elif keys[pygame.K_a]:
+                    finn_x -= finn_speed
+                    new_action = 1
+                    moved = True
+                elif keys[pygame.K_d]:
+                    finn_x += finn_speed
+                    new_action = 0
+                    moved = True
+
+            # Snap to first frame on action change
+            if moved and new_action != finn_action:
+                finn_action      = new_action
+                finn_frame       = 0
+                finn_last_update = now
+
+            # Otherwise advance on cooldown
+            elif moved and now - finn_last_update >= Finn_animation_cd:
+                finn_last_update += Finn_animation_cd
+                finn_frame       = (finn_frame + 1) % len(Finn_animations[finn_action])
+            idle_ws = Finn_animations[2][0]   # for example, first frame of the down‐run strip
+
+            # pad Finn_animations until you have an entry at index 9
+            while len(Finn_animations) < 10:
+                Finn_animations.append([idle_ws])
+
+            if not moved:
+                # If last move was Up or Down, use action 9 frame 0
+                if new_action in (2, 3):
+                    finn_action = 9
+                    finn_frame  = 0
+
+                # If last move was Left (A), use action 0 frame 1
+                elif new_action == 1:
+                    finn_action = 1
+                    finn_frame  = 0
+
+                # Otherwise (e.g. Right or default), use action 0 frame 0
+                else:
+                    finn_action = 0
+                    finn_frame  = 9
+        if finn_slowed:
+            if now - slow_start_time >= slow_duration:
+                finn_slowed = False
+                finn_speed = 4
+        # 4) Draw Finn (with invisible walls)
+        if not game_over:
+            frame_img = Finn_animations[finn_action][finn_frame]
+        # Force-move Finn outside spike zone during phase dialogue
+        if phase_dialogue_active and finn_forced_position_x is not None:
+            finn_x = finn_forced_position_x
+        # ── Spike barrier + auto-push during spike phases ──────────────────
+        if ice_king_state in ("phase2", "phase3"):
+            # get Ice King’s current rect
+            boss_img = current[bf]
+            ice_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
+
+            # Compute the full “no-go” zone
+            left_bound  = ice_xpos - SPIKE_BLOCK_DIST - 100  # Left boundary of the "danger zone"
+            right_bound = ice_xpos + SPIKE_BLOCK_DIST  # Right boundary of the "danger zone"
+
+            shift_amount = 100
+
+            for i in range(2):  # Display the barrier on both sides (left and right)
+                if i == 0:  # Left side
+                    x_pos = ice_xpos - SPIKE_BLOCK_DIST - 100 + shift_amount 
+                else:  # Right side
+                    x_pos = ice_xpos + SPIKE_BLOCK_DIST + shift_amount
+
+                # Get the current frame for the animation and display it
+                frame = barrier_frames[(now // 100) % len(barrier_frames)]  # Cycling through animation frames
+                screen.blit(frame, (x_pos, 0))
+
+            # now, **auto-push** Finn back outside the full zone
+            if left_bound < finn_x < right_bound:
+                if finn_x < ice_rect.centerx:
+                    finn_x = left_bound
+                else:
+                    finn_x = right_bound
+
+        # then clamp to screen edges as usual
+        UPPER_Y_LIMIT = 160
+        finn_x = max(0, min(finn_x, SCREEN_WIDTH  - frame_img.get_width()))
+        finn_y = max(UPPER_Y_LIMIT, min(finn_y, SCREEN_HEIGHT - frame_img.get_height()))
+
+        if finn_flash and now - flash_start_time <= flash_duration:
+            # Flash: only draw Finn on even-numbered ticks to create blinking
+            if (now // 100) % 2 == 0:
+                screen.blit(frame_img, (finn_x, finn_y))
+        else:
+            screen.blit(frame_img, (finn_x, finn_y))
+            finn_flash = False
+
+        if finn_slowed:
+            blue_finn = frame_img.copy()
+            blue_finn.fill((0, 150, 255, 200), special_flags=pygame.BLEND_RGBA_MULT)
+            screen.blit(blue_finn, (finn_x, finn_y))
+
+        # Restore speed after duration
+        if finn_slowed and now - slow_start_time >= slow_duration:
+            finn_slowed = False
+            finn_speed = 4
+        full_rect   = frame_img.get_rect(topleft=(finn_x, finn_y))
+        if game_over:
+            full_rect = pygame.Rect(0, 0, 0, 0)  # Dummy rect to avoid crashes
+        player_mask = pygame.mask.from_surface(frame_img)
+
+        if finn_blocked:
+            # Apply a light blue overlay to Finn when frozen
+            if now - freeze_start_time <= freeze_duration:
+                blue_finn = frame_img.copy()
+                blue_finn.fill((25, 230, 230, 200), special_flags=pygame.BLEND_RGBA_MULT)  # Light blue overlay
+                screen.blit(blue_finn, (finn_x, finn_y))
+
+                # Prevent movement and attacking while frozen
+                finn_speed = 0  # Prevent movement
+                finn_attacking = False  # Prevent attack
+            else:
+                # Restore movement and attack ability after freeze duration
+                finn_blocked = False
+                finn_speed = 4  # Restore normal speed
+                freeze_start_time = 0
+        
+        if not finn_blocked:
+            moved = False
+            new_action = finn_action
+
+        # Phase transitions
+        hp_ratio = ice_king.current_health / ice_king.max_health
+        if ice_king.current_health <= 0 and ice_king_state != "dying" and not ice_king_fully_defeated:
+            ice_king_state = "dying"
+            death_start_time = pygame.time.get_ticks()
+            explosion_index = 0
+            explosion_timer = death_start_time
+            ice_flash_start = death_start_time
+            ice_flash_duration = 1500
+            current_dialogue = None
+
+        elif hp_ratio <= 0.7 and not phase2_started:
+            phase2_started = True
+            pending_phase = "phase2"
+            queue_dialogue(battle_dialogue["phase2"])
+            phase_dialogue_active = True
+
+            left_bound = ice_xpos - SPIKE_BLOCK_DIST - 100
+            finn_forced_position_x = left_bound - 10
+
+        elif hp_ratio <= 0.4 and not phase3_started:
+            phase3_started = True
+            pending_phase = "phase3"
+            queue_dialogue(battle_dialogue["phase3"])
+            phase_dialogue_active = True
+
+            left_bound = ice_xpos - SPIKE_BLOCK_DIST - 100
+            finn_forced_position_x = left_bound - 10
+
+        # drive behavior purely by HP
+        if not dialogue_is_blocking:
+            if ice_king_state != "defeated":  
+                if hp_ratio > 0.7:
+                    phase1(now)
+                elif hp_ratio > 0.4:
+                    phase2(now)
+                else:
+                    phase3_ready = (
+                        ice_king_state in ("phase3", "cube_attack") and
+                        not dialogue_is_blocking
+                    )
+                    if phase3_ready:
+                        phase3(now)
+
+        # Ice Spike collision detection (pixel-perfect)
+        for sp in spikes[:]:
+            img, rect = sp.draw(screen)
+            # Create mask for spike and check overlap
+            spike_mask = pygame.mask.from_surface(img)
+            offset = (full_rect.x - rect.x, full_rect.y - rect.y)
+            if spike_mask.overlap(player_mask, offset):
+                health_bar.takeDamage(1)
+                if health_bar.current_health <= 0:
+                    game_over = True
+                    pygame.mixer.music.stop()
+                spikes.remove(sp)
+
+                finn_flash = True
+                flash_start_time = pygame.time.get_ticks()
+
+        for emitter in steam_emitters[:]:
+            if emitter.update():
+                steam_emitters.remove(emitter)
+            else:
+                emitter.draw(screen)
+        
+        for crack in ground_cracks[:]:
+            if crack.update():
+                ground_cracks.remove(crack)
+            else:
+                crack.draw(screen)
+
+        if ice_king_state == "dying":
+            if not fireworks_played:
+                fireworks_sound.play()
+                fireworks_played = True
+            snowballs.clear()
+            ice_cubes.clear()
+            warnings.clear()
+            spikes.clear()
+            steam_emitters.clear()
+            cube_trails.clear()
+        # Animate idle
+            if now - last_update >= frame_cd:
+                animation_frame = (animation_frame + 1) % len(idle_animation)
+                last_update = now
+
+            # Ice King base frame
+            boss_img = idle_animation[animation_frame]
+            boss_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
+
+            # Flashing logic: like Finn, show sprite on/off
+            if (now // 100) % 2 == 0:
+                screen.blit(boss_img, (ice_xpos, ice_ypos))
+
+            # --- Explosion logic ---
+            if 'explosion_index' == None:
+                explosion_index = 0
+                explosion_timer = now
+
+            if now - explosion_timer >= 100:
+                explosion_timer = now
+                explosion_index = (explosion_index + 1) % len(explosion_frames)  # loop
+                explosion_img = explosion_frames[explosion_index]
+                explosion_rect = explosion_img.get_rect(center=(ice_xpos + boss_img.get_width() // 2,
+                                                                ice_ypos + boss_img.get_height() // 2))
+                screen.blit(explosion_img, explosion_rect.topleft)
+
+            else:
+                if explosion_index < len(explosion_frames):
+                    explosion_img = explosion_frames[explosion_index]
+                    explosion_rect = explosion_img.get_rect(center=(ice_xpos + boss_img.get_width() // 2,
+                                                                    ice_ypos + boss_img.get_height() // 2))
+                    screen.blit(explosion_img, explosion_rect.topleft)
+
+            # End phase
+            if now - death_start_time > 3000:
+                ice_king_state = "defeated"
+                ice_king_fully_defeated = True
+                animation_frame = 0
+                last_update = now
+                explosion_index = None
+                explosion_timer = None
+
+        # Update animation frame if defeated
+        if ice_king_state == "defeated":
+            if ice_ypos < defeated_target_y:
+                ice_ypos += defeated_drop_speed
+                if ice_ypos > defeated_target_y:
+                    ice_ypos = defeated_target_y
+            if now - last_update >= frame_cd:
+                animation_frame = (animation_frame + 1) % len(defeated_animation)
+                last_update = now
+
+        if ice_king_state == "defeated":
+            current = defeated_animation
+        elif ice_king_state == "dying":
+            current = idle_animation  # Explicitly use idle during death phase
+        else:
+            if ice_king_state in ["idle", "dropping", "vulnerable"]:
+                current = idle_animation
+            elif ice_king_state in ["attack", "cube_attack"]:
+                current = attack_animation
+            elif ice_king_state in ["phase2", "phase3"]:
+                current = spike_animation
+            else:
+                current = idle_animation 
+
+        bf = animation_frame % len(current)
+        boss_img = current[bf]
+        if (
+            charging_ice_cube and 
+            ice_king_state == "cube_attack" and 
+            phase3_started and 
+            hp_ratio <= 0.4
+        ):
+            ice_king_glow.draw(
+                screen,
+                ice_xpos + boss_img.get_width() // 2 - 55,
+                ice_ypos + boss_img.get_height() // 2 + 10
+            )
+        # Always draw Ice King unless he's in dying or defeated state
+        if ice_king_state == "defeated":
+            defeated_frame = defeated_animation[animation_frame % len(defeated_animation)]
+            screen.blit(defeated_frame, (ice_xpos, ice_ypos))
+
+            if not defeat_dialogue_shown:
+                queue_dialogue(battle_dialogue["defeat"])
+                defeat_dialogue_shown = True
+
+        elif ice_king_state == "dying":
+            pass  # Drawing handled elsewhere
+
+        elif ice_king_state == "vulnerable":
+            if phase_dialogue_active and dialogue_is_blocking:
+            # Show idle animation during dialogue
+                if now - last_update >= frame_cd:
+                    animation_frame = (animation_frame + 1) % len(idle_animation)
+                    last_update = now
+                screen.blit(idle_animation[animation_frame], (ice_xpos, ice_ypos))
+
+        else:
+            if phase_dialogue_active and dialogue_is_blocking:
+            # Animate idle frame smoothly even during dialogue
+                if now - last_update >= frame_cd:
+                    animation_frame = (animation_frame + 1) % len(idle_animation)
+                    last_update = now
+                screen.blit(idle_animation[animation_frame], (ice_xpos, ice_ypos))
+            else:
+                screen.blit(current[bf], (ice_xpos, ice_ypos))
+
+        ice_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
+
+        # Draw sword swing effect when attacking
+        if finn_attacking and finn_action == 4:
+            # Choose a suitable frame for the swing (e.g., frame 3 out of 7)
+            swing_frame = min(finn_frame, len(slashing_frames) - 1)
+            swing_img = slashing_frames[swing_frame]
+
+            # Determine position relative to Finn's current position
+            swing_rect = swing_img.get_rect(center=full_rect.center)
+            swing_rect.x += 20  # shift effect to the right
+            swing_rect.y -= 50  # shift upward slightly
+
+            screen.blit(swing_img, swing_rect.topleft)
+
+        if finn_attacking and finn_action == 4 and finn_frame == 3 and not attack_damage_done:
+            sword_rect = full_rect.inflate(50, -150)
+            sword_rect.center = full_rect.center
+            sword_rect.y -= 20
+            
+            if sword_rect.colliderect(ice_rect):
+                ice_king.take_damage(150)
+                sword_hit_sound.play()
+                attack_damage_done = True
+                ice_king_hit = True
+                hit_overlay_start_time = pygame.time.get_ticks()
+                hit_start_frame = finn_frame
+            
+            if 'hit_anim_frame' not in locals():
+                hit_anim_frame = 0
+        
+        if ice_king_hit:
+            if now - hit_overlay_start_time <= hit_overlay_duration:  # Red overlay for a set duration (1.5 seconds)
+                # Create a red overlay surface that matches Ice King's sprite size
+                red_overlay = boss_img.copy()  # Using the same shape as Ice King's sprite
+                red_overlay.fill((255, 0, 0, 200), special_flags=pygame.BLEND_RGBA_MULT)  # Apply semi-transparent red color (alpha 150)
+
+                # Apply the red overlay only where Ice King's sprite is present (using mask)
+                screen.blit(red_overlay, (ice_xpos, ice_ypos)) 
+            
+        if 'hit_start_frame' in locals():
+            if 'hit_last_update' not in locals():
+                hit_last_update = now
+
+            HIT_FRAME_DELAY = 50
+
+            if now - hit_last_update >= HIT_FRAME_DELAY:
+                hit_last_update = now
+                hit_anim_frame += 1
+
+            if hit_anim_frame < len(hitting_frames):
+                hit_img = hitting_frames[hit_anim_frame]
+                hit_rect = hit_img.get_rect(center=ice_rect.center)
+                hit_rect.x -= 50
+                screen.blit(hit_img, hit_rect.topleft)
+            else:
+                del hit_start_frame
+                del hit_anim_frame
+                del hit_last_update
+
+        # Update & draw snowballs
+        for sb in snowballs[:]:
+            sb.update([full_rect])
+            if sb.x < 0 and sb.has_collided:
+                snowballs.remove(sb)
+            else:
+                sb.draw(screen)
+
+        # Reflect & draw ice cubes in phase3
+        if ice_king_state in ("phase3", "cube_attack"):
+            if finn_attacking and finn_action == 4 and finn_frame == 3:
+                atk_rect = full_rect.inflate(50, -20)
+                atk_rect.x += 25
+                atk_rect.y += 10
+                cube_targets = [atk_rect]
+            else:
+                cube_targets = [full_rect]
+
+            # Draw cube trails first (behind the cubes)
+            for trail in cube_trails[:]:
+                if trail.update():
+                    cube_trails.remove(trail)
+                else:
+                    trail.draw(screen)
+
+            for cb in ice_cubes[:]:
+                if cb.returning:
+                    cube_trails.append(IceCubeTrail(cb.image, cb.x, cb.y))
+
+                if cb.update(cube_targets, ice_rect, finn_attacking):
+                    ice_cubes.remove(cb)
+                else:
+                    cb.draw(screen)
+
+                    # Draw the clash effect ONCE when triggered
+                    if 'clash_start_frame' in globals():
+                        CLASH_FRAME_DELAY = 50
+                        if now - clash_last_update >= CLASH_FRAME_DELAY:
+                            clash_last_update = now
+                            clash_anim_frame += 1
+
+                        if clash_anim_frame < len(clashing_frames):
+                            clash_img = clashing_frames[clash_anim_frame]
+                            clash_rect = clash_img.get_rect(center=cb.rect.center)
+                            clash_rect.y -= 5
+                            screen.blit(clash_img, clash_rect.topleft)
+                        else:
+                            del clash_start_frame
+                            del clash_anim_frame
+                            del clash_last_update
         if current_dialogue:
             draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
             duration = current_dialogue.get("duration", 999999)
@@ -1470,635 +2009,129 @@ while running:
             current_dialogue = dialogue_queue.pop(0)
             dialogue_start_time = pygame.time.get_ticks()
 
-        elif not final_cutscene_shown:
-            fireworks_sound.stop()
-            queue_dialogue(cutscene_dialogue["final"])
-            final_cutscene_shown = True
+        if defeat_dialogue_shown and not current_dialogue and not dialogue_queue and not defeat_dialogue_finished:
+            defeat_dialogue_finished = True
+            final_cutscene_active = True
+            final_cutscene_shown = False
+        
+        elif pending_phase:
+            if pending_phase == "start_phase1":
+                pass
+            else:
+                ice_king_state = pending_phase  # Only assign real animation states
+                animation_frame = 0
+                last_update = pygame.time.get_ticks()
+                ice_spike_loops = 0
 
-        # Wait until dialogue finishes, then close final cutscene on click (handled by your event loop)
+            pending_phase = None
+            phase_dialogue_active = False
+            finn_forced_position_x = None
+
+            ice_king_hit = False
+            hit_overlay_start_time = 0
+            if 'hit_start_frame' in locals(): del hit_start_frame
+            if 'hit_anim_frame' in locals(): del hit_anim_frame
+            if 'hit_last_update' in locals(): del hit_last_update
+        
+        # Draw health bars
+        ice_king.draw_health_bar(screen)
+        health_bar.draw(screen)
+
+        # Draw snowflakes
+        for fl in snowflakes:
+            fl.update(); fl.draw()
+
+        # Update and draw falling shards
+        for shard in falling_shards[:]:
+            if shard.update():
+                falling_shards.remove(shard)
+            else:
+                shard.draw(screen)
+
+        # Update and draw falling snowflakes
+        for chunk in falling_snow_chunks[:]:
+            if chunk.update():
+                falling_snow_chunks.remove(chunk)
+            else:
+                chunk.draw(screen)
+        
+        for icicle in icicles[:]:
+            if icicle.update():
+                icicles.remove(icicle)
+            else:
+                icicle.draw(screen)
+        
+        for shard in ice_shards[:]:
+            if shard.update():
+                ice_shards.remove(shard)
+            else:
+                shard.draw(screen)
+        
+        if tutorial_active:
+        # Stage 0: full-screen image only
+            if tutorial_stage == 0:
+                screen.blit(tutorial_images[0], (0, 0))
+
+            elif 1 <= tutorial_stage < len(tutorial_images):
+                # Background blur
+                blur_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
+                blur_overlay.fill((0, 0, 0, 180))
+                screen.blit(blur_overlay, (0, 0))
+
+                # Scale image to a smaller size
+                original_img = tutorial_images[tutorial_stage]
+                scaled_width = int(SCREEN_WIDTH * 0.6)
+                scaled_height = int(SCREEN_HEIGHT * 0.4)
+                img = pygame.transform.scale(original_img, (scaled_width, scaled_height))
+
+                # Center it slightly above mid screen
+                img_rect = img.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+                screen.blit(img, img_rect)
+
+                # Title and text
+                title_surf = tutorial_font.render(tutorial_titles[tutorial_stage - 1], True, (255, 255, 255))
+                screen.blit(title_surf, (SCREEN_WIDTH // 2 - title_surf.get_width() // 2, 60))
+
+                # Draw wrapped instructional text below the image
+                lines = wrap_text(tutorial_texts[tutorial_stage - 1], text_font, SCREEN_WIDTH - 200)
+                text_start_y = img_rect.bottom + 20  # space between image and text
+
+                for i, line in enumerate(lines):
+                    line_surf = text_font.render(line, True, (220, 220, 220))
+                    screen.blit(
+                        line_surf,
+                        (SCREEN_WIDTH // 2 - line_surf.get_width() // 2, text_start_y + i * 30)
+                    )
+
+                # Click to continue tip
+                tip_surf = text_font.render("Click to continue...", True, (180, 180, 180))
+                screen.blit(tip_surf, (SCREEN_WIDTH // 2 - tip_surf.get_width() // 2, SCREEN_HEIGHT - 50))
+        
+            # Ensure tutorial plays first, then dialogue, then fight starts
+        if tutorial_active:
+            pass  # Still showing tutorial
+
+        if (
+            not cutscene_active and
+            not tutorial_active and
+            not phase1_dialogue_queued and
+            not dialogue_queue and
+            not current_dialogue
+        ):
+            queue_dialogue(battle_dialogue["phase1"])
+            phase_dialogue_active = True
+            phase1_dialogue_queued = True
+
+        elif (
+            not tutorial_active and
+            phase1_dialogue_queued and
+            not dialogue_queue and
+            not current_dialogue and
+            not fight_started
+        ):
+            pending_phase = "start_phase1"
+
         pygame.display.flip()
         clock.tick(FPS)
-        continue
 
-    if victory_screen_active:
-        victory_sound.stop()
-        new_victory_sound.play()
-        screen.blit(victory_screen, (0, 0))
-
-        font_victory = pygame.font.Font(BASE / "PressStart2P.ttf", 24)
-        tip = font_victory.render("Click to exit", True, (255, 255, 255))
-        screen.blit(tip, (SCREEN_WIDTH // 2 - tip.get_width() // 2, SCREEN_HEIGHT - 35))
-
-        pygame.display.flip()
-        clock.tick(FPS)
-        continue
-
-    screen.blit(background, (offset_x, offset_y))
-
-    if random.random() < 0.01:  # ~1% chance per frame
-        spawn_x = random.randint(100, SCREEN_WIDTH - 100)
-        icicles.append(Icicle(spawn_x, delay=random.randint(500, 1500)))
-
-        # ——— Finn Input & Animation ———
-    keys = pygame.key.get_pressed()
-
-    # 1) Attack
-    if not finn_attacking and keys[pygame.K_SPACE]:
-        finn_attacking     = True
-        finn_action        = 4
-        finn_frame         = 0
-        finn_last_update   = now
-        attack_damage_done = False
-        sword_swoosh_sound.play()
-
-    # 2) Handle attack animation
-    if finn_attacking:
-        if now - finn_last_update >= Finn_animation_cd:
-            finn_last_update += Finn_animation_cd
-            finn_frame      += 1
-            if finn_frame >= len(Finn_animations[finn_action]):
-                finn_attacking = False
-                finn_action    = 2
-                finn_frame     = 0
-
-    # 3) Movement & directional animation
-    else:
-        moved      = False
-        new_action = finn_action
-
-        if finn_blocked or phase_dialogue_active:
-            moved = False
-        else:
-            # Normal movement handling when Finn is not frozen
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_w]:
-                finn_y -= finn_speed
-                new_action = 3
-                moved = True
-            elif keys[pygame.K_s]:
-                finn_y += finn_speed
-                new_action = 2
-                moved = True
-            elif keys[pygame.K_a]:
-                finn_x -= finn_speed
-                new_action = 1
-                moved = True
-            elif keys[pygame.K_d]:
-                finn_x += finn_speed
-                new_action = 0
-                moved = True
-
-        # Snap to first frame on action change
-        if moved and new_action != finn_action:
-            finn_action      = new_action
-            finn_frame       = 0
-            finn_last_update = now
-
-        # Otherwise advance on cooldown
-        elif moved and now - finn_last_update >= Finn_animation_cd:
-            finn_last_update += Finn_animation_cd
-            finn_frame       = (finn_frame + 1) % len(Finn_animations[finn_action])
-        idle_ws = Finn_animations[2][0]   # for example, first frame of the down‐run strip
-
-        # pad Finn_animations until you have an entry at index 9
-        while len(Finn_animations) < 10:
-            Finn_animations.append([idle_ws])
-
-        if not moved:
-            # If last move was Up or Down, use action 9 frame 0
-            if new_action in (2, 3):
-                finn_action = 9
-                finn_frame  = 0
-
-            # If last move was Left (A), use action 0 frame 1
-            elif new_action == 1:
-                finn_action = 1
-                finn_frame  = 0
-
-            # Otherwise (e.g. Right or default), use action 0 frame 0
-            else:
-                finn_action = 0
-                finn_frame  = 9
-    if finn_slowed:
-        if now - slow_start_time >= slow_duration:
-            finn_slowed = False
-            finn_speed = 4
-    # 4) Draw Finn (with invisible walls)
-    if not game_over:
-        frame_img = Finn_animations[finn_action][finn_frame]
-    # Force-move Finn outside spike zone during phase dialogue
-    if phase_dialogue_active and finn_forced_position_x is not None:
-        finn_x = finn_forced_position_x
-    # ── Spike barrier + auto-push during spike phases ──────────────────
-    if ice_king_state in ("phase2", "phase3"):
-        # get Ice King’s current rect
-        boss_img = current[bf]
-        ice_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
-
-        # Compute the full “no-go” zone
-        left_bound  = ice_xpos - SPIKE_BLOCK_DIST - 100  # Left boundary of the "danger zone"
-        right_bound = ice_xpos + SPIKE_BLOCK_DIST  # Right boundary of the "danger zone"
-
-        shift_amount = 100
-
-        for i in range(2):  # Display the barrier on both sides (left and right)
-            if i == 0:  # Left side
-                x_pos = ice_xpos - SPIKE_BLOCK_DIST - 100 + shift_amount  # Adjust to place the barrier at the correct position
-            else:  # Right side
-                x_pos = ice_xpos + SPIKE_BLOCK_DIST + shift_amount # Adjust to place the barrier at the correct position
-
-            # Get the current frame for the animation and display it
-            frame = barrier_frames[(now // 100) % len(barrier_frames)]  # Cycling through animation frames
-            screen.blit(frame, (x_pos, 0))
-
-        # now, **auto-push** Finn back outside the full zone
-        if left_bound < finn_x < right_bound:
-            if finn_x < ice_rect.centerx:
-                finn_x = left_bound
-            else:
-                finn_x = right_bound
-
-    # then clamp to screen edges as usual
-    UPPER_Y_LIMIT = 160
-    finn_x = max(0, min(finn_x, SCREEN_WIDTH  - frame_img.get_width()))
-    finn_y = max(UPPER_Y_LIMIT, min(finn_y, SCREEN_HEIGHT - frame_img.get_height()))
-
-    if finn_flash and now - flash_start_time <= flash_duration:
-        # Flash: only draw Finn on even-numbered ticks to create blinking
-        if (now // 100) % 2 == 0:
-            screen.blit(frame_img, (finn_x, finn_y))
-    else:
-        screen.blit(frame_img, (finn_x, finn_y))
-        finn_flash = False
-
-    if finn_slowed:
-        # Create a transparent copy of Finn’s frame
-        blue_finn = frame_img.copy()
-
-        # Tint the entire Finn sprite blue
-        blue_finn.fill((0, 150, 255, 200), special_flags=pygame.BLEND_RGBA_MULT)
-
-        # Draw the tinted Finn on top
-        screen.blit(blue_finn, (finn_x, finn_y))
-    full_rect   = frame_img.get_rect(topleft=(finn_x, finn_y))
-    if game_over:
-        full_rect = pygame.Rect(0, 0, 0, 0)  # Dummy rect to avoid crashes
-    player_mask = pygame.mask.from_surface(frame_img)
-
-    if finn_blocked:
-        # Apply a light blue overlay to Finn when frozen
-        if now - freeze_start_time <= freeze_duration:
-            blue_finn = frame_img.copy()
-            blue_finn.fill((25, 230, 230, 200), special_flags=pygame.BLEND_RGBA_MULT)  # Light blue overlay
-            screen.blit(blue_finn, (finn_x, finn_y))
-
-            # Prevent movement and attacking while frozen
-            finn_speed = 0  # Prevent movement
-            finn_attacking = False  # Prevent attack
-        else:
-            # Restore movement and attack ability after freeze duration
-            finn_blocked = False
-            finn_speed = 4  # Restore normal speed
-            freeze_start_time = 0
-    
-    if not finn_blocked:
-        moved = False
-        new_action = finn_action
-
-    # Phase transitions
-    hp_ratio = ice_king.current_health / ice_king.max_health
-    if ice_king.current_health <= 0 and ice_king_state != "dying" and not ice_king_fully_defeated:
-        ice_king_state = "dying"
-        death_start_time = pygame.time.get_ticks()
-        explosion_index = 0
-        explosion_timer = death_start_time
-        ice_flash_start = death_start_time
-        ice_flash_duration = 1500
-        current_dialogue = None
-
-    elif hp_ratio <= 0.7 and not phase2_started:
-        phase2_started = True
-        pending_phase = "phase2"
-        queue_dialogue(battle_dialogue["phase2"])
-        phase_dialogue_active = True
-
-        left_bound = ice_xpos - SPIKE_BLOCK_DIST - 100
-        finn_forced_position_x = left_bound - 10
-
-    elif hp_ratio <= 0.4 and not phase3_started:
-        phase3_started = True
-        pending_phase = "phase3"
-        queue_dialogue(battle_dialogue["phase3"])
-        phase_dialogue_active = True
-
-        left_bound = ice_xpos - SPIKE_BLOCK_DIST - 100
-        finn_forced_position_x = left_bound - 10
-
-    # drive behavior purely by HP
-    if not dialogue_is_blocking:
-        if ice_king_state != "defeated":  
-            if hp_ratio > 0.7:
-                phase1(now)
-            elif hp_ratio > 0.4:
-                phase2(now)
-            else:
-                phase3_ready = (
-                    ice_king_state in ("phase3", "cube_attack") and
-                    not dialogue_is_blocking
-                )
-                if phase3_ready:
-                    phase3(now)
-
-    # Ice Spike collision detection (pixel-perfect)
-    for sp in spikes[:]:
-        img, rect = sp.draw(screen)
-        # Create mask for spike and check overlap
-        spike_mask = pygame.mask.from_surface(img)
-        offset = (full_rect.x - rect.x, full_rect.y - rect.y)
-        if spike_mask.overlap(player_mask, offset):
-            health_bar.takeDamage(1)
-            if health_bar.current_health <= 0:
-                game_over = True
-                pygame.mixer.music.stop()
-            spikes.remove(sp)
-
-            finn_flash = True
-            flash_start_time = pygame.time.get_ticks()
-
-    for emitter in steam_emitters[:]:
-        if emitter.update():
-            steam_emitters.remove(emitter)
-        else:
-            emitter.draw(screen)
-    
-    for crack in ground_cracks[:]:
-        if crack.update():
-            ground_cracks.remove(crack)
-        else:
-            crack.draw(screen)
-
-    if ice_king_state == "dying":
-        if not fireworks_played:
-            fireworks_sound.play()
-            fireworks_played = True
-        snowballs.clear()
-        ice_cubes.clear()
-        warnings.clear()
-        spikes.clear()
-        steam_emitters.clear()
-        cube_trails.clear()
-    # Animate idle
-        if now - last_update >= frame_cd:
-            animation_frame = (animation_frame + 1) % len(idle_animation)
-            last_update = now
-
-        # Ice King base frame
-        boss_img = idle_animation[animation_frame]
-        boss_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
-
-        # Flashing logic: like Finn, show sprite on/off
-        if (now // 100) % 2 == 0:
-            screen.blit(boss_img, (ice_xpos, ice_ypos))
-
-        # --- Explosion logic ---
-        if 'explosion_index' == None:
-            explosion_index = 0
-            explosion_timer = now
-
-        if now - explosion_timer >= 100:
-            explosion_timer = now
-            explosion_index = (explosion_index + 1) % len(explosion_frames)  # loop
-            explosion_img = explosion_frames[explosion_index]
-            explosion_rect = explosion_img.get_rect(center=(ice_xpos + boss_img.get_width() // 2,
-                                                            ice_ypos + boss_img.get_height() // 2))
-            screen.blit(explosion_img, explosion_rect.topleft)
-
-        else:
-            if explosion_index < len(explosion_frames):
-                explosion_img = explosion_frames[explosion_index]
-                explosion_rect = explosion_img.get_rect(center=(ice_xpos + boss_img.get_width() // 2,
-                                                                ice_ypos + boss_img.get_height() // 2))
-                screen.blit(explosion_img, explosion_rect.topleft)
-
-        # End phase
-        if now - death_start_time > 3000:
-            ice_king_state = "defeated"
-            ice_king_fully_defeated = True
-            animation_frame = 0
-            last_update = now
-            explosion_index = None
-            explosion_timer = None
-
-    # Update animation frame if defeated
-    if ice_king_state == "defeated":
-        if ice_ypos < defeated_target_y:
-            ice_ypos += defeated_drop_speed
-            if ice_ypos > defeated_target_y:
-                ice_ypos = defeated_target_y
-        if now - last_update >= frame_cd:
-            animation_frame = (animation_frame + 1) % len(defeated_animation)
-            last_update = now
-
-    if ice_king_state == "defeated":
-        current = defeated_animation
-    elif ice_king_state == "dying":
-        current = idle_animation  # Explicitly use idle during death phase
-    else:
-        if ice_king_state in ["idle", "dropping", "vulnerable"]:
-            current = idle_animation
-        elif ice_king_state in ["attack", "cube_attack"]:
-            current = attack_animation
-        elif ice_king_state in ["phase2", "phase3"]:
-            current = spike_animation
-        else:
-            current = idle_animation 
-
-    bf = animation_frame % len(current)
-    boss_img = current[bf]
-    if (
-        charging_ice_cube and 
-        ice_king_state == "cube_attack" and 
-        phase3_started and 
-        hp_ratio <= 0.4
-    ):
-        ice_king_glow.draw(
-            screen,
-            ice_xpos + boss_img.get_width() // 2 - 55,
-            ice_ypos + boss_img.get_height() // 2 + 10
-        )
-    # Always draw Ice King unless he's in dying or defeated state
-    if ice_king_state == "defeated":
-        defeated_frame = defeated_animation[animation_frame % len(defeated_animation)]
-        screen.blit(defeated_frame, (ice_xpos, ice_ypos))
-
-        if not defeat_dialogue_shown:
-            queue_dialogue(battle_dialogue["defeat"])
-            defeat_dialogue_shown = True
-
-    elif ice_king_state == "dying":
-        pass  # Drawing handled elsewhere
-
-    elif ice_king_state == "vulnerable":
-        if phase_dialogue_active and dialogue_is_blocking:
-        # Show idle animation during dialogue
-            if now - last_update >= frame_cd:
-                animation_frame = (animation_frame + 1) % len(idle_animation)
-                last_update = now
-            screen.blit(idle_animation[animation_frame], (ice_xpos, ice_ypos))
-
-    else:
-        if phase_dialogue_active and dialogue_is_blocking:
-        # Animate idle frame smoothly even during dialogue
-            if now - last_update >= frame_cd:
-                animation_frame = (animation_frame + 1) % len(idle_animation)
-                last_update = now
-            screen.blit(idle_animation[animation_frame], (ice_xpos, ice_ypos))
-        else:
-            screen.blit(current[bf], (ice_xpos, ice_ypos))
-
-    ice_rect = boss_img.get_rect(topleft=(ice_xpos, ice_ypos))
-
-    # Draw sword swing effect when attacking
-    if finn_attacking and finn_action == 4:
-        # Choose a suitable frame for the swing (e.g., frame 3 out of 7)
-        swing_frame = min(finn_frame, len(slashing_frames) - 1)
-        swing_img = slashing_frames[swing_frame]
-
-        # Determine position relative to Finn's current position
-        swing_rect = swing_img.get_rect(center=full_rect.center)
-        swing_rect.x += 20  # shift effect to the right
-        swing_rect.y -= 50  # shift upward slightly
-
-        screen.blit(swing_img, swing_rect.topleft)
-
-    if finn_attacking and finn_action == 4 and finn_frame == 3 and not attack_damage_done:
-        sword_rect = full_rect.inflate(50, -150)
-        sword_rect.center = full_rect.center
-        sword_rect.y -= 20
-        
-        if sword_rect.colliderect(ice_rect):
-            ice_king.take_damage(150)
-            sword_hit_sound.play()
-            attack_damage_done = True
-            ice_king_hit = True
-            hit_overlay_start_time = pygame.time.get_ticks()
-            hit_start_frame = finn_frame
-        
-        if 'hit_anim_frame' not in locals():
-            hit_anim_frame = 0
-    
-    if ice_king_hit:
-        if now - hit_overlay_start_time <= hit_overlay_duration:  # Red overlay for a set duration (1.5 seconds)
-            # Create a red overlay surface that matches Ice King's sprite size
-            red_overlay = boss_img.copy()  # Using the same shape as Ice King's sprite
-            red_overlay.fill((255, 0, 0, 200), special_flags=pygame.BLEND_RGBA_MULT)  # Apply semi-transparent red color (alpha 150)
-
-            # Apply the red overlay only where Ice King's sprite is present (using mask)
-            screen.blit(red_overlay, (ice_xpos, ice_ypos)) 
-        
-    if 'hit_start_frame' in locals():
-        if 'hit_last_update' not in locals():
-            hit_last_update = now
-
-        HIT_FRAME_DELAY = 50
-
-        if now - hit_last_update >= HIT_FRAME_DELAY:
-            hit_last_update = now
-            hit_anim_frame += 1
-
-        if hit_anim_frame < len(hitting_frames):
-            hit_img = hitting_frames[hit_anim_frame]
-            hit_rect = hit_img.get_rect(center=ice_rect.center)
-            hit_rect.x -= 50
-            screen.blit(hit_img, hit_rect.topleft)
-        else:
-            del hit_start_frame
-            del hit_anim_frame
-            del hit_last_update
-
-    # Update & draw snowballs
-    for sb in snowballs[:]:
-        sb.update([full_rect])
-        if sb.x < 0 and sb.has_collided:
-            snowballs.remove(sb)
-        else:
-            sb.draw(screen)
-
-    # Reflect & draw ice cubes in phase3
-    if ice_king_state in ("phase3", "cube_attack"):
-        if finn_attacking and finn_action == 4 and finn_frame == 3:
-            atk_rect = full_rect.inflate(50, -20)
-            atk_rect.x += 25
-            atk_rect.y += 10
-            cube_targets = [atk_rect]
-        else:
-            cube_targets = [full_rect]
-
-        # Draw cube trails first (behind the cubes)
-        for trail in cube_trails[:]:
-            if trail.update():
-                cube_trails.remove(trail)
-            else:
-                trail.draw(screen)
-
-        for cb in ice_cubes[:]:
-            if cb.returning:
-                cube_trails.append(IceCubeTrail(cb.image, cb.x, cb.y))
-
-            if cb.update(cube_targets, ice_rect, finn_attacking):
-                ice_cubes.remove(cb)
-            else:
-                cb.draw(screen)
-
-                # Draw the clash effect ONCE when triggered
-                if 'clash_start_frame' in locals():
-                    CLASH_FRAME_DELAY = 50
-                    if now - clash_last_update >= CLASH_FRAME_DELAY:
-                        clash_last_update = now
-                        clash_anim_frame += 1
-
-                    if clash_anim_frame < len(clashing_frames):
-                        clash_img = clashing_frames[clash_anim_frame]
-                        clash_rect = clash_img.get_rect(center=cb.rect.center)
-                        clash_rect.y -= 5
-                        screen.blit(clash_img, clash_rect.topleft)
-                    else:
-                        del clash_start_frame
-                        del clash_anim_frame
-                        del clash_last_update
-    if current_dialogue:
-        draw_dialogue(screen, current_dialogue["speaker"], current_dialogue["line"])
-        duration = current_dialogue.get("duration", 999999)
-        if pygame.time.get_ticks() - dialogue_start_time >= duration:
-            current_dialogue = None
-
-    elif dialogue_queue:
-        current_dialogue = dialogue_queue.pop(0)
-        dialogue_start_time = pygame.time.get_ticks()
-
-    if defeat_dialogue_shown and not current_dialogue and not dialogue_queue and not defeat_dialogue_finished:
-        defeat_dialogue_finished = True
-        final_cutscene_active = True
-        final_cutscene_shown = False
-    
-    elif pending_phase:
-        if pending_phase == "start_phase1":
-            pass
-        else:
-            ice_king_state = pending_phase  # Only assign real animation states
-            animation_frame = 0
-            last_update = pygame.time.get_ticks()
-            ice_spike_loops = 0
-
-        pending_phase = None
-        phase_dialogue_active = False
-        finn_forced_position_x = None
-
-        ice_king_hit = False
-        hit_overlay_start_time = 0
-        if 'hit_start_frame' in locals(): del hit_start_frame
-        if 'hit_anim_frame' in locals(): del hit_anim_frame
-        if 'hit_last_update' in locals(): del hit_last_update
-    
-    # Draw health bars
-    ice_king.draw_health_bar(screen)
-    health_bar.draw(screen)
-
-    # Draw snowflakes
-    for fl in snowflakes:
-        fl.update(); fl.draw()
-
-    # Update and draw falling shards
-    for shard in falling_shards[:]:
-        if shard.update():
-            falling_shards.remove(shard)
-        else:
-            shard.draw(screen)
-
-    # Update and draw falling snowflakes
-    for chunk in falling_snow_chunks[:]:
-        if chunk.update():
-            falling_snow_chunks.remove(chunk)
-        else:
-            chunk.draw(screen)
-    
-    for icicle in icicles[:]:
-        if icicle.update():
-            icicles.remove(icicle)
-        else:
-            icicle.draw(screen)
-    
-    for shard in ice_shards[:]:
-        if shard.update():
-            ice_shards.remove(shard)
-        else:
-            shard.draw(screen)
-    
-    if tutorial_active:
-    # Stage 0: full-screen image only
-        if tutorial_stage == 0:
-            screen.blit(tutorial_images[0], (0, 0))
-
-        elif 1 <= tutorial_stage < len(tutorial_images):
-            # Background blur
-            blur_overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-            blur_overlay.fill((0, 0, 0, 180))
-            screen.blit(blur_overlay, (0, 0))
-
-            # Scale image to a smaller size
-            original_img = tutorial_images[tutorial_stage]
-            scaled_width = int(SCREEN_WIDTH * 0.6)
-            scaled_height = int(SCREEN_HEIGHT * 0.4)
-            img = pygame.transform.scale(original_img, (scaled_width, scaled_height))
-
-            # Center it slightly above mid screen
-            img_rect = img.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
-            screen.blit(img, img_rect)
-
-            # Title and text
-            title_surf = tutorial_font.render(tutorial_titles[tutorial_stage - 1], True, (255, 255, 255))
-            screen.blit(title_surf, (SCREEN_WIDTH // 2 - title_surf.get_width() // 2, 60))
-
-            # Draw wrapped instructional text below the image
-            lines = wrap_text(tutorial_texts[tutorial_stage - 1], text_font, SCREEN_WIDTH - 200)
-            text_start_y = img_rect.bottom + 20  # space between image and text
-
-            for i, line in enumerate(lines):
-                line_surf = text_font.render(line, True, (220, 220, 220))
-                screen.blit(
-                    line_surf,
-                    (SCREEN_WIDTH // 2 - line_surf.get_width() // 2, text_start_y + i * 30)
-                )
-
-            # Click to continue tip
-            tip_surf = text_font.render("Click to continue...", True, (180, 180, 180))
-            screen.blit(tip_surf, (SCREEN_WIDTH // 2 - tip_surf.get_width() // 2, SCREEN_HEIGHT - 50))
-    
-        # Ensure tutorial plays first, then dialogue, then fight starts
-    if tutorial_active:
-        pass  # Still showing tutorial
-
-    if (
-        not cutscene_active and
-        not tutorial_active and
-        not phase1_dialogue_queued and
-        not dialogue_queue and
-        not current_dialogue
-    ):
-        queue_dialogue(battle_dialogue["phase1"])
-        phase_dialogue_active = True
-        phase1_dialogue_queued = True
-
-    elif (
-        not tutorial_active and
-        phase1_dialogue_queued and
-        not dialogue_queue and
-        not current_dialogue and
-        not fight_started
-    ):
-        pending_phase = "start_phase1"
-
-    pygame.display.flip()
-    clock.tick(FPS)
-
-pygame.quit()
+    pygame.quit()
