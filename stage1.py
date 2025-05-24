@@ -17,7 +17,7 @@ def startStage1():
   brown = (111, 78, 55)
 
   screen = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
-  pygame.display.set_caption("Adventure Time")
+  pygame.display.set_caption("Adventure Time Marathon")
 
   font_path = Path("assets") / "font" / "PressStart2P.ttf"
   large_font = pygame.font.Font(font_path, 32)
@@ -864,19 +864,21 @@ def startStage1():
 
         # Smoothly update Finn's base speed toward the max base speed
         target_base_speed = self.max_base_speed
-        self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.3
+        self.finn.base_speed += (target_base_speed - self.finn.base_speed) * 0.35
         if self.effects.effects["speed_boost"]["active"]:
             target_scroll_speed = self.finn.base_speed * 2
         elif self.finn.running and self.finn.stamina_bar.current_stamina > 0:
             target_scroll_speed = self.finn.base_speed * self.finn.run_multiplier
         else:
             target_scroll_speed = self.finn.base_speed
-        self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.3
+        self.scroll_speed += (target_scroll_speed - self.scroll_speed) * 0.35
 
       # Game Finished 
       if self.game_finished and not self.game_over:
-        finish_text = self.timer_font.render("FINISH!", True, brown)
-        screen.blit(finish_text, (SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 30))
+        if not hasattr(self, "finish_time"):
+          self.finish_time = pygame.time.get_ticks()
+        elif pygame.time.get_ticks() - self.finish_time:
+          self.auto_advance = True
       
       # Player Died
       if self.game_over and not self.game_finished:
@@ -1673,7 +1675,7 @@ def startStage1():
       self.finn_ref.health_bar.heal(6)
 
     def apply_stamina(self):
-      self.finn_ref.stamina_bar.increaseStamina(8)
+      self.finn_ref.stamina_bar.increaseStamina(6)
 
     def enable_blue_buff(self):
       self.finn_ref.base_speed *= 2
@@ -1829,5 +1831,9 @@ def startStage1():
 
     scene.mouse.draw()
     pygame.display.update()
+
+    # === Exit loop when Stage 1 is finished ===
+    if hasattr(scene, "auto_advance") and scene.auto_advance:
+      return
 
   pygame.quit()

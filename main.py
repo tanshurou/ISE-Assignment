@@ -6,15 +6,10 @@ from stage2 import run_stage2
 def main():
     pygame.init()
     pygame.mixer.init()
-
-    SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736  
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Adventure Time → Boss Battle")
-
-    # Start Game 
+    
+    # Start Game in Stage 1
     startStage1()
-
-    # Run Stage 2
+    # After that transition to Stage 2
     run_stage2()
 
     pygame.quit()

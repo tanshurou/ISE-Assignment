@@ -1046,7 +1046,7 @@ def run_stage2():
     game_over_sound_played = False
     SCREEN_WIDTH, SCREEN_HEIGHT = 1300, 736
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Finn vs Ice King Boss")
+    pygame.display.set_caption("Adventure time Boss Battle")
     clock = pygame.time.Clock()
     FPS = 90
     SPIKE_BLOCK_DIST = 300
